@@ -281,39 +281,40 @@ const Notes = () => {
   };
 
   return (
-    <div className="min-h-screen min-h-screen-dynamic bg-background pb-16 sm:pb-20">
-      <header className="border-b bg-background sticky top-0 z-10">
-        <div className="container mx-auto px-2 xs:px-3 sm:px-4 py-2">
-          <div className="flex items-center justify-between gap-1 xs:gap-2">
-            <div className="flex items-center gap-1.5 xs:gap-2 min-w-0 flex-shrink-0">
-              <img src={appLogo} alt="Npd" className="h-6 w-6 xs:h-7 xs:w-7 sm:h-8 sm:w-8 flex-shrink-0" />
-              <h1 className="text-base xs:text-lg sm:text-xl font-bold">Notes</h1>
-            </div>
-            <div className="flex gap-0.5 xs:gap-1 sm:gap-2 flex-shrink-0">
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={toggleDarkMode}
-                className="h-7 w-7 xs:h-8 xs:w-8 sm:h-10 sm:w-10 touch-target"
-                title="Toggle theme"
-              >
-                {isDarkMode ? <Sun className="h-4 w-4 sm:h-5 sm:w-5" /> : <Moon className="h-4 w-4 sm:h-5 sm:w-5" />}
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => navigate('/todo/today')}
-                title="Switch to To-Do"
-                className="h-7 w-7 xs:h-8 xs:w-8 sm:h-10 sm:w-10 touch-target"
-              >
-                <ListTodo className="h-4 w-4 xs:h-5 xs:w-5 sm:h-6 sm:w-6" />
-              </Button>
+    <div className="min-h-screen min-h-screen-dynamic bg-background pb-16 sm:pb-20 flex justify-center">
+      <div className="w-full max-w-lg lg:max-w-2xl">
+        <header className="border-b bg-background sticky top-0 z-10">
+          <div className="px-2 xs:px-3 sm:px-4 py-2">
+            <div className="flex items-center justify-between gap-1 xs:gap-2">
+              <div className="flex items-center gap-1.5 xs:gap-2 min-w-0 flex-shrink-0">
+                <img src={appLogo} alt="Npd" className="h-6 w-6 xs:h-7 xs:w-7 sm:h-8 sm:w-8 flex-shrink-0" />
+                <h1 className="text-base xs:text-lg sm:text-xl font-bold">Notes</h1>
+              </div>
+              <div className="flex gap-0.5 xs:gap-1 sm:gap-2 flex-shrink-0">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={toggleDarkMode}
+                  className="h-7 w-7 xs:h-8 xs:w-8 sm:h-10 sm:w-10 touch-target"
+                  title="Toggle theme"
+                >
+                  {isDarkMode ? <Sun className="h-4 w-4 sm:h-5 sm:w-5" /> : <Moon className="h-4 w-4 sm:h-5 sm:w-5" />}
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => navigate('/todo/today')}
+                  title="Switch to To-Do"
+                  className="h-7 w-7 xs:h-8 xs:w-8 sm:h-10 sm:w-10 touch-target"
+                >
+                  <ListTodo className="h-4 w-4 xs:h-5 xs:w-5 sm:h-6 sm:w-6" />
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <main className="container mx-auto px-2 xs:px-3 sm:px-4 py-3 xs:py-4 sm:py-6">
+        <main className="px-2 xs:px-3 sm:px-4 py-3 xs:py-4 sm:py-6">
         {/* Archive & Trash Tabs */}
         <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'active' | 'archived' | 'trash')} className="mb-4">
           <TabsList className="grid w-full grid-cols-3 max-w-md">
@@ -544,7 +545,8 @@ const Notes = () => {
         returnTo="/notes"
       />
 
-      <BottomNavigation />
+        <BottomNavigation />
+      </div>
     </div>
   );
 };

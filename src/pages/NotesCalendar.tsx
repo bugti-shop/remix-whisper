@@ -117,78 +117,79 @@ const NotesCalendar = () => {
   };
 
   return (
-    <div className="min-h-screen min-h-screen-dynamic bg-background pb-16 sm:pb-20">
-      <header className="border-b sticky top-0 bg-background z-10">
-        <div className="container mx-auto px-2 xs:px-3 sm:px-4 py-2">
-          <div className="flex items-center justify-between gap-1 xs:gap-2">
-            <div className="flex items-center gap-1.5 xs:gap-2 min-w-0 flex-shrink-0">
-              <img src={appLogo} alt="Npd" className="h-6 w-6 xs:h-7 xs:w-7 sm:h-8 sm:w-8 flex-shrink-0" />
-              <h1 className="text-base xs:text-lg sm:text-xl font-bold truncate">Calendar</h1>
-            </div>
-            <div className="flex items-center gap-0.5 xs:gap-1 flex-shrink-0">
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={toggleDarkMode}
-                className="h-7 w-7 xs:h-8 xs:w-8 sm:h-9 sm:w-9 touch-target"
-                title="Toggle theme"
-              >
-                {isDarkMode ? <Sun className="h-4 w-4 sm:h-5 sm:w-5" /> : <Moon className="h-4 w-4 sm:h-5 sm:w-5" />}
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 xs:h-8 xs:w-8 sm:h-9 sm:w-9 touch-target">
-                    <Filter className="h-4 w-4 sm:h-5 sm:w-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 z-50 bg-card max-h-[70vh] overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
-                  <DropdownMenuLabel>Filter by Type</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {(Object.keys(NOTE_TYPE_LABELS) as NoteType[]).map((type) => {
-                    const { label, icon: Icon } = NOTE_TYPE_LABELS[type];
-                    return (
-                      <DropdownMenuCheckboxItem
-                        key={type}
-                        checked={selectedNoteTypes.includes(type)}
-                        onCheckedChange={() => toggleNoteType(type)}
-                        className="gap-2"
-                      >
-                        <Icon className="h-4 w-4" />
-                        {label}
-                      </DropdownMenuCheckboxItem>
-                    );
-                  })}
-                </DropdownMenuContent>
-              </DropdownMenu>
+    <div className="min-h-screen min-h-screen-dynamic bg-background pb-16 sm:pb-20 flex justify-center">
+      <div className="w-full max-w-lg lg:max-w-2xl">
+        <header className="border-b sticky top-0 bg-background z-10">
+          <div className="px-2 xs:px-3 sm:px-4 py-2">
+            <div className="flex items-center justify-between gap-1 xs:gap-2">
+              <div className="flex items-center gap-1.5 xs:gap-2 min-w-0 flex-shrink-0">
+                <img src={appLogo} alt="Npd" className="h-6 w-6 xs:h-7 xs:w-7 sm:h-8 sm:w-8 flex-shrink-0" />
+                <h1 className="text-base xs:text-lg sm:text-xl font-bold truncate">Calendar</h1>
+              </div>
+              <div className="flex items-center gap-0.5 xs:gap-1 flex-shrink-0">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={toggleDarkMode}
+                  className="h-7 w-7 xs:h-8 xs:w-8 sm:h-9 sm:w-9 touch-target"
+                  title="Toggle theme"
+                >
+                  {isDarkMode ? <Sun className="h-4 w-4 sm:h-5 sm:w-5" /> : <Moon className="h-4 w-4 sm:h-5 sm:w-5" />}
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 xs:h-8 xs:w-8 sm:h-9 sm:w-9 touch-target">
+                      <Filter className="h-4 w-4 sm:h-5 sm:w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48 z-50 bg-card max-h-[70vh] overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+                    <DropdownMenuLabel>Filter by Type</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {(Object.keys(NOTE_TYPE_LABELS) as NoteType[]).map((type) => {
+                      const { label, icon: Icon } = NOTE_TYPE_LABELS[type];
+                      return (
+                        <DropdownMenuCheckboxItem
+                          key={type}
+                          checked={selectedNoteTypes.includes(type)}
+                          onCheckedChange={() => toggleNoteType(type)}
+                          className="gap-2"
+                        >
+                          <Icon className="h-4 w-4" />
+                          {label}
+                        </DropdownMenuCheckboxItem>
+                      );
+                    })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <main className="container mx-auto px-2 xs:px-3 sm:px-4 py-3 xs:py-4 sm:py-6 pb-28 xs:pb-32">
-        <div className="max-w-md mx-auto space-y-6">
-          <NotesCalendarView
-            selectedDate={date}
-            onDateSelect={setDate}
-          />
+        <main className="px-2 xs:px-3 sm:px-4 py-3 xs:py-4 sm:py-6 pb-28 xs:pb-32">
+          <div className="max-w-md mx-auto space-y-6">
+            <NotesCalendarView
+              selectedDate={date}
+              onDateSelect={setDate}
+            />
 
-          {selectedDateNotes.length > 0 && (
-            <div className="space-y-3 animate-fade-in">
-              <h2 className="text-lg font-semibold text-foreground">
-                Notes for {format(date || new Date(), 'MMMM dd, yyyy')}
-              </h2>
-              {selectedDateNotes.map((note) => (
-                <NoteCard
-                  key={note.id}
-                  note={note}
-                  onEdit={handleEditNote}
-                  onDelete={handleDeleteNote}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      </main>
+            {selectedDateNotes.length > 0 && (
+              <div className="space-y-3 animate-fade-in">
+                <h2 className="text-lg font-semibold text-foreground">
+                  Notes for {format(date || new Date(), 'MMMM dd, yyyy')}
+                </h2>
+                {selectedDateNotes.map((note) => (
+                  <NoteCard
+                    key={note.id}
+                    note={note}
+                    onEdit={handleEditNote}
+                    onDelete={handleDeleteNote}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </main>
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -241,7 +242,8 @@ const NotesCalendar = () => {
         returnTo="/calendar"
       />
 
-      <BottomNavigation />
+        <BottomNavigation />
+      </div>
     </div>
   );
 };
