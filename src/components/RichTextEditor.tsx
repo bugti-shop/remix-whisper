@@ -90,6 +90,14 @@ const FONT_CATEGORIES = [
       { name: 'Cabin', value: '"Cabin", sans-serif', sample: 'Humanist Style' },
       { name: 'Oswald', value: '"Oswald", sans-serif', sample: 'CONDENSED STYLE' },
       { name: 'Archivo', value: '"Archivo", sans-serif', sample: 'Grotesque Sans' },
+      { name: 'Rubik', value: '"Rubik", sans-serif', sample: 'Rounded Corners' },
+      { name: 'Karla', value: '"Karla", sans-serif', sample: 'Grotesque Style' },
+      { name: 'Mulish', value: '"Mulish", sans-serif', sample: 'Clean Reading' },
+      { name: 'DM Sans', value: '"DM Sans", sans-serif', sample: 'Low Contrast' },
+      { name: 'Manrope', value: '"Manrope", sans-serif', sample: 'Modern Geometric' },
+      { name: 'Outfit', value: '"Outfit", sans-serif', sample: 'Variable Width' },
+      { name: 'Lexend', value: '"Lexend", sans-serif', sample: 'Easy Reading' },
+      { name: 'Figtree', value: '"Figtree", sans-serif', sample: 'Friendly Sans' },
     ]
   },
   {
@@ -99,17 +107,54 @@ const FONT_CATEGORIES = [
       { name: 'Merriweather', value: '"Merriweather", serif', sample: 'Reading Comfort' },
       { name: 'Crimson Text', value: '"Crimson Text", serif', sample: 'Book Typography' },
       { name: 'Noto Serif', value: '"Noto Serif", serif', sample: 'Classic Style' },
+      { name: 'Lora', value: '"Lora", serif', sample: 'Contemporary Serif' },
+      { name: 'Libre Baskerville', value: '"Libre Baskerville", serif', sample: 'Web Optimized' },
+      { name: 'EB Garamond', value: '"EB Garamond", serif', sample: 'Old Style' },
+      { name: 'Cormorant', value: '"Cormorant", serif', sample: 'Display Serif' },
+      { name: 'Bitter', value: '"Bitter", serif', sample: 'Slab Serif' },
+      { name: 'Spectral', value: '"Spectral", serif', sample: 'Screen Reading' },
+    ]
+  },
+  {
+    category: 'Handwritten',
+    fonts: [
+      { name: 'Dancing Script', value: '"Dancing Script", cursive', sample: 'Casual Elegance' },
+      { name: 'Pacifico', value: '"Pacifico", cursive', sample: 'Fun & Playful' },
+      { name: 'Indie Flower', value: '"Indie Flower", cursive', sample: 'Hand Written' },
+      { name: 'Shadows Into Light', value: '"Shadows Into Light", cursive', sample: 'Sketchy Notes' },
+      { name: 'Permanent Marker', value: '"Permanent Marker", cursive', sample: 'Bold Marker' },
+      { name: 'Caveat', value: '"Caveat", cursive', sample: 'Quick Notes' },
+      { name: 'Satisfy', value: '"Satisfy", cursive', sample: 'Brush Script' },
+      { name: 'Kalam', value: '"Kalam", cursive', sample: 'Handwritten Style' },
+      { name: 'Patrick Hand', value: '"Patrick Hand", cursive', sample: 'Friendly Notes' },
+      { name: 'Architects Daughter', value: '"Architects Daughter", cursive', sample: 'Blueprint Style' },
+      { name: 'Amatic SC', value: '"Amatic SC", cursive', sample: 'CONDENSED HAND' },
+      { name: 'Covered By Your Grace', value: '"Covered By Your Grace", cursive', sample: 'Casual Script' },
+      { name: 'Gloria Hallelujah', value: '"Gloria Hallelujah", cursive', sample: 'Comic Hand' },
+      { name: 'Handlee', value: '"Handlee", cursive', sample: 'Loose Handwriting' },
+      { name: 'Just Another Hand', value: '"Just Another Hand", cursive', sample: 'Quick Scribble' },
+      { name: 'Neucha', value: '"Neucha", cursive', sample: 'Russian Hand' },
+      { name: 'Nothing You Could Do', value: '"Nothing You Could Do", cursive', sample: 'Casual Flow' },
+      { name: 'Reenie Beanie', value: '"Reenie Beanie", cursive', sample: 'Quick Note' },
+      { name: 'Rock Salt', value: '"Rock Salt", cursive', sample: 'Rough Marker' },
+      { name: 'Schoolbell', value: '"Schoolbell", cursive', sample: 'Classroom Style' },
+      { name: 'Waiting for the Sunrise', value: '"Waiting for the Sunrise", cursive', sample: 'Dreamy Script' },
+      { name: 'Zeyada', value: '"Zeyada", cursive', sample: 'Artistic Hand' },
+      { name: 'Homemade Apple', value: '"Homemade Apple", cursive', sample: 'Natural Writing' },
+      { name: 'Loved by the King', value: '"Loved by the King", cursive', sample: 'Royal Script' },
+      { name: 'La Belle Aurore', value: '"La Belle Aurore", cursive', sample: 'French Elegance' },
     ]
   },
   {
     category: 'Display & Decorative',
     fonts: [
       { name: 'Bebas Neue', value: '"Bebas Neue", cursive', sample: 'BOLD HEADLINES' },
-      { name: 'Dancing Script', value: '"Dancing Script", cursive', sample: 'Casual Elegance' },
-      { name: 'Pacifico', value: '"Pacifico", cursive', sample: 'Fun & Playful' },
-      { name: 'Indie Flower', value: '"Indie Flower", cursive', sample: 'Hand Written' },
-      { name: 'Shadows Into Light', value: '"Shadows Into Light", cursive', sample: 'Sketchy Notes' },
-      { name: 'Permanent Marker', value: '"Permanent Marker", cursive', sample: 'Bold Marker' },
+      { name: 'Lobster', value: '"Lobster", cursive', sample: 'Retro Script' },
+      { name: 'Righteous', value: '"Righteous", cursive', sample: 'Groovy Display' },
+      { name: 'Alfa Slab One', value: '"Alfa Slab One", serif', sample: 'Heavy Slab' },
+      { name: 'Fredoka One', value: '"Fredoka One", cursive', sample: 'Rounded Fun' },
+      { name: 'Bangers', value: '"Bangers", cursive', sample: 'COMIC STYLE' },
+      { name: 'Russo One', value: '"Russo One", sans-serif', sample: 'Sporty Bold' },
     ]
   },
   {
@@ -119,6 +164,8 @@ const FONT_CATEGORIES = [
       { name: 'Space Mono', value: '"Space Mono", monospace', sample: 'function() {}' },
       { name: 'Fira Code', value: '"Fira Code", monospace', sample: '=> !== ===' },
       { name: 'Source Code Pro', value: '"Source Code Pro", monospace', sample: 'console.log()' },
+      { name: 'JetBrains Mono', value: '"JetBrains Mono", monospace', sample: 'let x = 42;' },
+      { name: 'IBM Plex Mono', value: '"IBM Plex Mono", monospace', sample: 'import { }' },
     ]
   }
 ];
