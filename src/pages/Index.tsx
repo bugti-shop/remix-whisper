@@ -823,37 +823,37 @@ const Index = () => {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="center" className="mb-2 w-48">
             <DropdownMenuItem onClick={() => handleCreateNote('sticky')} className="gap-2">
-              <StickyNote className="h-4 w-4" />
+              <StickyNote className="h-4 w-4 text-amber-500" />
               Sticky Note
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => handleCreateNote('lined')} className="gap-2">
-              <FileText className="h-4 w-4" />
+              <FileText className="h-4 w-4 text-blue-500" />
               Lined Note
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => handleCreateNote('regular')} className="gap-2">
-              <FileEdit className="h-4 w-4" />
+              <FileEdit className="h-4 w-4 text-emerald-500" />
               Regular Note
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => handleCreateNote('sketch')} className="gap-2">
-              <Pen className="h-4 w-4" />
+              <Pen className="h-4 w-4 text-purple-500" />
               Sketch Note
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => handleCreateNote('code')} className="gap-2">
-              <FileCode className="h-4 w-4" />
+              <FileCode className="h-4 w-4 text-orange-500" />
               Code Note
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => handleCreateNote('mindmap')} className="gap-2">
-              <GitBranch className="h-4 w-4" />
+              <GitBranch className="h-4 w-4 text-pink-500" />
               Mind Map
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => handleCreateNote('expense')} className="gap-2">
-              <Receipt className="h-4 w-4" />
+              <Receipt className="h-4 w-4 text-teal-500" />
               Expense Tracker
             </DropdownMenuItem>
           </DropdownMenuContent>
