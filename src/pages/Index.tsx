@@ -820,33 +820,39 @@ const Index = () => {
               New Note
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="center" className="mb-2 w-56 p-2">
-            <DropdownMenuItem onClick={() => handleCreateNote('sticky')} className="gap-3 py-3 px-4 text-base cursor-pointer">
-              <StickyNote className="h-5 w-5 text-yellow-500" />
+          <DropdownMenuContent align="center" className="mb-2 w-64 p-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-xl z-50">
+            <DropdownMenuItem onClick={() => handleCreateNote('sticky')} className="gap-4 py-4 px-5 text-lg cursor-pointer rounded-lg">
+              <StickyNote className="h-6 w-6 text-yellow-500" />
               Sticky Note
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleCreateNote('lined')} className="gap-3 py-3 px-4 text-base cursor-pointer">
-              <FileText className="h-5 w-5 text-blue-500" />
+            <div className="h-px bg-gray-200 dark:bg-gray-700 my-1" />
+            <DropdownMenuItem onClick={() => handleCreateNote('lined')} className="gap-4 py-4 px-5 text-lg cursor-pointer rounded-lg">
+              <FileText className="h-6 w-6 text-blue-500" />
               Lined Note
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleCreateNote('regular')} className="gap-3 py-3 px-4 text-base cursor-pointer">
-              <FileEdit className="h-5 w-5 text-green-500" />
+            <div className="h-px bg-gray-200 dark:bg-gray-700 my-1" />
+            <DropdownMenuItem onClick={() => handleCreateNote('regular')} className="gap-4 py-4 px-5 text-lg cursor-pointer rounded-lg">
+              <FileEdit className="h-6 w-6 text-green-500" />
               Regular Note
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleCreateNote('sketch')} className="gap-3 py-3 px-4 text-base cursor-pointer">
-              <Pen className="h-5 w-5 text-purple-500" />
+            <div className="h-px bg-gray-200 dark:bg-gray-700 my-1" />
+            <DropdownMenuItem onClick={() => handleCreateNote('sketch')} className="gap-4 py-4 px-5 text-lg cursor-pointer rounded-lg">
+              <Pen className="h-6 w-6 text-purple-500" />
               Sketch Note
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleCreateNote('code')} className="gap-3 py-3 px-4 text-base cursor-pointer">
-              <FileCode className="h-5 w-5 text-orange-500" />
+            <div className="h-px bg-gray-200 dark:bg-gray-700 my-1" />
+            <DropdownMenuItem onClick={() => handleCreateNote('code')} className="gap-4 py-4 px-5 text-lg cursor-pointer rounded-lg">
+              <FileCode className="h-6 w-6 text-orange-500" />
               Code Note
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleCreateNote('mindmap')} className="gap-3 py-3 px-4 text-base cursor-pointer">
-              <GitBranch className="h-5 w-5 text-cyan-500" />
+            <div className="h-px bg-gray-200 dark:bg-gray-700 my-1" />
+            <DropdownMenuItem onClick={() => handleCreateNote('mindmap')} className="gap-4 py-4 px-5 text-lg cursor-pointer rounded-lg">
+              <GitBranch className="h-6 w-6 text-cyan-500" />
               Mind Map
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleCreateNote('expense')} className="gap-3 py-3 px-4 text-base cursor-pointer">
-              <Receipt className="h-5 w-5 text-pink-500" />
+            <div className="h-px bg-gray-200 dark:bg-gray-700 my-1" />
+            <DropdownMenuItem onClick={() => handleCreateNote('expense')} className="gap-4 py-4 px-5 text-lg cursor-pointer rounded-lg">
+              <Receipt className="h-6 w-6 text-pink-500" />
               Expense Tracker
             </DropdownMenuItem>
           </DropdownMenuContent>
