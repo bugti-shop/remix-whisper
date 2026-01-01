@@ -31,15 +31,16 @@ export const TodoLayout = ({ children, title }: TodoLayoutProps) => {
   const syncEnabled = syncManager.isSyncEnabled();
 
   return (
-    <div className="min-h-screen bg-background animate-fade-in">
-      <header 
-        className="border-b sticky top-0 bg-background z-10"
-        style={{
-          WebkitTransform: 'translateZ(0)',
-          transform: 'translateZ(0)',
-        }}
-      >
-        <div className="container mx-auto px-3 sm:px-4 py-2">
+    <div className="min-h-screen bg-background animate-fade-in flex justify-center">
+      <div className="w-full max-w-lg lg:max-w-2xl">
+        <header 
+          className="border-b sticky top-0 bg-background z-10"
+          style={{
+            WebkitTransform: 'translateZ(0)',
+            transform: 'translateZ(0)',
+          }}
+        >
+          <div className="px-3 sm:px-4 py-2">
           <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2">
             <div className="flex items-center gap-2 min-w-0 flex-shrink-0">
               <img src={appLogo} alt="Npd" className="h-7 w-7 sm:h-8 sm:w-8 flex-shrink-0" style={{ minWidth: '28px', minHeight: '28px' }} />
@@ -87,10 +88,11 @@ export const TodoLayout = ({ children, title }: TodoLayoutProps) => {
           </div>
         </div>
       </header>
-      <main className="pb-16 sm:pb-20">
+      <main className="pb-16 sm:pb-20 px-3 sm:px-4">
         {children}
       </main>
-      <TodoBottomNavigation />
+        <TodoBottomNavigation />
+      </div>
     </div>
   );
 };
