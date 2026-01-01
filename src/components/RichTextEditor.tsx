@@ -188,6 +188,8 @@ export const RichTextEditor = ({
   const savedRangeRef = useRef<Range | null>(null);
   const [history, setHistory] = useState<string[]>([content]);
   const [historyIndex, setHistoryIndex] = useState(0);
+  const [fontPickerOpen, setFontPickerOpen] = useState(false);
+  const [fontSizePickerOpen, setFontSizePickerOpen] = useState(false);
   
   // Track if we're in a composition (IME/autocomplete) to prevent crashes on Android
   const isComposingRef = useRef(false);
@@ -644,7 +646,7 @@ export const RichTextEditor = ({
       </Popover>
 
       {onFontFamilyChange && (
-        <Popover>
+        <Popover open={fontPickerOpen} onOpenChange={setFontPickerOpen}>
           <PopoverTrigger asChild>
             <Button
               type="button"
@@ -656,47 +658,59 @@ export const RichTextEditor = ({
               <span className="text-xs font-semibold">Aa</span>
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-80 max-h-[70vh] overflow-y-auto p-0">
-            <div className="p-3 border-b sticky top-0 bg-background z-10">
-              <h4 className="font-semibold text-sm">Choose Font</h4>
+          <PopoverContent className="w-72 max-h-[60vh] overflow-y-auto p-0 rounded-2xl shadow-xl border-0" sideOffset={8}>
+            <div className="p-4 border-b bg-gradient-to-r from-primary/10 to-primary/5 rounded-t-2xl">
+              <h4 className="font-bold text-base text-foreground">Choose Font</h4>
+              <p className="text-xs text-muted-foreground mt-0.5">Select a font style for your note</p>
             </div>
-            <div className="p-2">
+            <div className="p-3 space-y-4">
               {FONT_CATEGORIES.map((category) => (
-                <div key={category.category} className="mb-4">
-                  <h5 className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-2 mb-2">
+                <div key={category.category}>
+                  <h5 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-2">
                     {category.category}
                   </h5>
-                  <div className="space-y-1">
-                    {category.fonts.map((font) => (
-                      <button
-                        key={font.value}
-                        onClick={() => onFontFamilyChange(font.value)}
-                        className={cn(
-                          "w-full text-left px-3 py-2.5 rounded-md transition-colors",
-                          fontFamily === font.value 
-                            ? "bg-primary text-primary-foreground" 
-                            : "hover:bg-secondary"
-                        )}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">{font.name}</span>
-                          {fontFamily === font.value && (
-                            <span className="text-xs">✓</span>
-                          )}
-                        </div>
-                        <p 
+                  <div className="grid gap-1.5">
+                    {category.fonts.map((font) => {
+                      const isSelected = fontFamily === font.value;
+                      return (
+                        <button
+                          key={font.value}
+                          onClick={() => {
+                            onFontFamilyChange(font.value);
+                            setFontPickerOpen(false);
+                          }}
                           className={cn(
-                            "text-lg mt-1",
-                            fontFamily === font.value 
-                              ? "text-primary-foreground/80" 
-                              : "text-muted-foreground"
+                            "w-full text-left px-3 py-3 rounded-xl transition-all duration-200 border-2",
+                            isSelected 
+                              ? "bg-primary border-primary shadow-lg scale-[1.02]" 
+                              : "bg-card border-transparent hover:border-primary/30 hover:bg-secondary/50"
                           )}
-                          style={{ fontFamily: font.value }}
                         >
-                          {font.sample}
-                        </p>
-                      </button>
-                    ))}
+                          <div className="flex items-center justify-between gap-2">
+                            <span className={cn(
+                              "text-xs font-semibold",
+                              isSelected ? "text-primary-foreground" : "text-foreground"
+                            )}>
+                              {font.name}
+                            </span>
+                            {isSelected && (
+                              <div className="w-5 h-5 rounded-full bg-primary-foreground/20 flex items-center justify-center">
+                                <span className="text-primary-foreground text-xs">✓</span>
+                              </div>
+                            )}
+                          </div>
+                          <p 
+                            className={cn(
+                              "text-base mt-1.5 leading-tight",
+                              isSelected ? "text-primary-foreground/90" : "text-muted-foreground"
+                            )}
+                            style={{ fontFamily: font.value }}
+                          >
+                            {font.sample}
+                          </p>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               ))}
@@ -706,7 +720,7 @@ export const RichTextEditor = ({
       )}
 
       {onFontSizeChange && (
-        <Popover>
+        <Popover open={fontSizePickerOpen} onOpenChange={setFontSizePickerOpen}>
           <PopoverTrigger asChild>
             <Button
               type="button"
@@ -718,31 +732,39 @@ export const RichTextEditor = ({
               <TextCursorInput className="h-4 w-4" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-56 p-2">
-            <div className="p-2 border-b mb-2">
-              <h4 className="font-semibold text-sm">Font Size</h4>
+          <PopoverContent className="w-52 p-0 rounded-2xl shadow-xl border-0" sideOffset={8}>
+            <div className="p-3 border-b bg-gradient-to-r from-primary/10 to-primary/5 rounded-t-2xl">
+              <h4 className="font-bold text-sm text-foreground">Font Size</h4>
             </div>
-            <div className="flex flex-col gap-1">
-              {FONT_SIZES.map((size) => (
-                <button
-                  key={size.value}
-                  onClick={() => onFontSizeChange(size.value)}
-                  className={cn(
-                    "w-full text-left px-3 py-2 rounded-md transition-colors flex items-center justify-between",
-                    fontSize === size.value 
-                      ? "bg-primary text-primary-foreground" 
-                      : "hover:bg-secondary"
-                  )}
-                >
-                  <span style={{ fontSize: size.value }}>{size.name}</span>
-                  <span className={cn(
-                    "text-xs",
-                    fontSize === size.value ? "text-primary-foreground/70" : "text-muted-foreground"
-                  )}>
-                    {size.value}
-                  </span>
-                </button>
-              ))}
+            <div className="p-2 space-y-1">
+              {FONT_SIZES.map((size) => {
+                const isSelected = fontSize === size.value;
+                return (
+                  <button
+                    key={size.value}
+                    onClick={() => {
+                      onFontSizeChange(size.value);
+                      setFontSizePickerOpen(false);
+                    }}
+                    className={cn(
+                      "w-full text-left px-3 py-2.5 rounded-xl transition-all duration-200 flex items-center justify-between",
+                      isSelected 
+                        ? "bg-primary text-primary-foreground" 
+                        : "hover:bg-secondary"
+                    )}
+                  >
+                    <span style={{ fontSize: size.value }} className="font-medium">{size.name}</span>
+                    <span className={cn(
+                      "text-xs px-2 py-0.5 rounded-full",
+                      isSelected 
+                        ? "bg-primary-foreground/20 text-primary-foreground" 
+                        : "bg-muted text-muted-foreground"
+                    )}>
+                      {size.value}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </PopoverContent>
         </Popover>
