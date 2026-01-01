@@ -23,7 +23,14 @@ export const BottomNavigation = () => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-border safe-area-bottom z-40">
+    <nav 
+      className="fixed bottom-0 left-0 right-0 bg-background border-t border-border z-40"
+      style={{
+        paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)',
+        WebkitTransform: 'translateZ(0)',
+        transform: 'translateZ(0)',
+      }}
+    >
       <div className="grid grid-cols-4 h-14 xs:h-16 sm:h-16 max-w-screen-lg mx-auto px-1">
         {navItems.map((item) => {
           const Icon = item.icon;
