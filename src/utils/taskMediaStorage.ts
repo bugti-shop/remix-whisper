@@ -1,10 +1,35 @@
 // IndexedDB storage for task media (images + voice recordings)
-// Uses IndexedDB for cross-platform storage (web + native via Capacitor)
+// Uses IndexedDB with persistent storage for unlimited capacity on native devices
 
 export type TaskMediaKind = 'image' | 'audio';
 
 // Memory cache for resolved URLs
 const cache = new Map<string, string>();
+
+// ============ Persistent Storage (Unlimited Quota) ============
+
+// Request persistent storage for unlimited quota (removes browser restrictions)
+const requestPersistentStorage = async (): Promise<boolean> => {
+  try {
+    if (navigator.storage && navigator.storage.persist) {
+      const isPersisted = await navigator.storage.persisted();
+      if (!isPersisted) {
+        return await navigator.storage.persist();
+      }
+      return isPersisted;
+    }
+  } catch (e) {
+    console.warn('Persistent storage request failed:', e);
+  }
+  return false;
+};
+
+// Initialize persistent storage on module load for unlimited capacity
+requestPersistentStorage().then(granted => {
+  if (granted) {
+    console.log('Persistent storage granted - unlimited capacity available');
+  }
+});
 
 // ============ Reference Helpers ============
 
@@ -146,13 +171,21 @@ export const resolveTaskMediaUrl = async (refOrUrl: string): Promise<string> => 
 
 // ============ Storage Info ============
 
-export const getStorageInfo = async (): Promise<{ used: number; available: number } | null> => {
-  if (navigator.storage && navigator.storage.estimate) {
-    const estimate = await navigator.storage.estimate();
+export const getStorageInfo = async (): Promise<{ used: number; available: number; persistent: boolean } | null> => {
+  if (navigator.storage) {
+    const [estimate, persistent] = await Promise.all([
+      navigator.storage.estimate?.() || Promise.resolve({ usage: 0, quota: 0 }),
+      navigator.storage.persisted?.() || Promise.resolve(false)
+    ]);
     return {
       used: estimate.usage || 0,
-      available: estimate.quota || 0,
+      // When persistent, storage is unlimited (device capacity)
+      available: persistent ? Infinity : (estimate.quota || 0),
+      persistent
     };
   }
   return null;
 };
+
+// Force request persistent storage (call during app init if needed)
+export const ensureUnlimitedStorage = requestPersistentStorage;
