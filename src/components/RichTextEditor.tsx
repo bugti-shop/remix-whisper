@@ -19,12 +19,27 @@ import {
   TextCursorInput,
   Link2,
   Table,
+  Star,
 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { TableEditor, generateTableHTML } from './TableEditor';
+
+// Favorites storage helpers
+const FAVORITES_KEY = 'note-font-favorites';
+const getFavorites = (): string[] => {
+  try {
+    const stored = localStorage.getItem(FAVORITES_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+};
+const saveFavorites = (favorites: string[]) => {
+  localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
+};
 
 interface RichTextEditorProps {
   content: string;
@@ -71,22 +86,29 @@ const HIGHLIGHT_COLORS = [
 
 const FONT_CATEGORIES = [
   {
-    category: 'Sans Serif',
+    category: 'Popular',
     fonts: [
       { name: 'Default', value: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', sample: 'Clean & Modern' },
-      { name: 'Inter', value: '"Inter", sans-serif', sample: 'The quick brown fox' },
-      { name: 'Roboto', value: '"Roboto", sans-serif', sample: 'The quick brown fox' },
-      { name: 'Open Sans', value: '"Open Sans", sans-serif', sample: 'The quick brown fox' },
-      { name: 'Lato', value: '"Lato", sans-serif', sample: 'The quick brown fox' },
-      { name: 'Montserrat', value: '"Montserrat", sans-serif', sample: 'Bold & Elegant' },
+      { name: 'Roboto', value: '"Roboto", sans-serif', sample: 'Most Popular' },
+      { name: 'Open Sans', value: '"Open Sans", sans-serif', sample: 'Web Favorite' },
+      { name: 'Lato', value: '"Lato", sans-serif', sample: 'Elegant Sans' },
+      { name: 'Montserrat', value: '"Montserrat", sans-serif', sample: 'Bold & Modern' },
       { name: 'Poppins', value: '"Poppins", sans-serif', sample: 'Geometric Style' },
+      { name: 'Playfair Display', value: '"Playfair Display", serif', sample: 'Classic Elegance' },
+      { name: 'Dancing Script', value: '"Dancing Script", cursive', sample: 'Beautiful Script' },
+    ]
+  },
+  {
+    category: 'Sans Serif',
+    fonts: [
+      { name: 'Inter', value: '"Inter", sans-serif', sample: 'Modern UI Font' },
       { name: 'Raleway', value: '"Raleway", sans-serif', sample: 'Thin & Stylish' },
       { name: 'Nunito', value: '"Nunito", sans-serif', sample: 'Rounded & Friendly' },
-      { name: 'Ubuntu', value: '"Ubuntu", sans-serif', sample: 'The quick brown fox' },
+      { name: 'Ubuntu', value: '"Ubuntu", sans-serif', sample: 'Tech Friendly' },
       { name: 'Quicksand', value: '"Quicksand", sans-serif', sample: 'Light & Airy' },
       { name: 'Josefin Sans', value: '"Josefin Sans", sans-serif', sample: 'Vintage Modern' },
       { name: 'Work Sans', value: '"Work Sans", sans-serif', sample: 'Professional' },
-      { name: 'PT Sans', value: '"PT Sans", sans-serif', sample: 'The quick brown fox' },
+      { name: 'PT Sans', value: '"PT Sans", sans-serif', sample: 'Readable Sans' },
       { name: 'Cabin', value: '"Cabin", sans-serif', sample: 'Humanist Style' },
       { name: 'Oswald', value: '"Oswald", sans-serif', sample: 'CONDENSED STYLE' },
       { name: 'Archivo', value: '"Archivo", sans-serif', sample: 'Grotesque Sans' },
@@ -98,12 +120,16 @@ const FONT_CATEGORIES = [
       { name: 'Outfit', value: '"Outfit", sans-serif', sample: 'Variable Width' },
       { name: 'Lexend', value: '"Lexend", sans-serif', sample: 'Easy Reading' },
       { name: 'Figtree', value: '"Figtree", sans-serif', sample: 'Friendly Sans' },
+      { name: 'Source Sans Pro', value: '"Source Sans Pro", sans-serif', sample: 'Adobe Classic' },
+      { name: 'Noto Sans', value: '"Noto Sans", sans-serif', sample: 'Universal' },
+      { name: 'Barlow', value: '"Barlow", sans-serif', sample: 'Slightly Rounded' },
+      { name: 'Exo 2', value: '"Exo 2", sans-serif', sample: 'Geometric Tech' },
+      { name: 'Titillium Web', value: '"Titillium Web", sans-serif', sample: 'Academic Style' },
     ]
   },
   {
     category: 'Serif',
     fonts: [
-      { name: 'Playfair Display', value: '"Playfair Display", serif', sample: 'Elegant Headlines' },
       { name: 'Merriweather', value: '"Merriweather", serif', sample: 'Reading Comfort' },
       { name: 'Crimson Text', value: '"Crimson Text", serif', sample: 'Book Typography' },
       { name: 'Noto Serif', value: '"Noto Serif", serif', sample: 'Classic Style' },
@@ -113,12 +139,14 @@ const FONT_CATEGORIES = [
       { name: 'Cormorant', value: '"Cormorant", serif', sample: 'Display Serif' },
       { name: 'Bitter', value: '"Bitter", serif', sample: 'Slab Serif' },
       { name: 'Spectral', value: '"Spectral", serif', sample: 'Screen Reading' },
+      { name: 'PT Serif', value: '"PT Serif", serif', sample: 'Russian Serif' },
+      { name: 'Vollkorn', value: '"Vollkorn", serif', sample: 'Body Text' },
+      { name: 'Alegreya', value: '"Alegreya", serif', sample: 'Literary Style' },
     ]
   },
   {
     category: 'Handwritten',
     fonts: [
-      { name: 'Dancing Script', value: '"Dancing Script", cursive', sample: 'Casual Elegance' },
       { name: 'Pacifico', value: '"Pacifico", cursive', sample: 'Fun & Playful' },
       { name: 'Indie Flower', value: '"Indie Flower", cursive', sample: 'Hand Written' },
       { name: 'Shadows Into Light', value: '"Shadows Into Light", cursive', sample: 'Sketchy Notes' },
@@ -143,6 +171,21 @@ const FONT_CATEGORIES = [
       { name: 'Homemade Apple', value: '"Homemade Apple", cursive', sample: 'Natural Writing' },
       { name: 'Loved by the King', value: '"Loved by the King", cursive', sample: 'Royal Script' },
       { name: 'La Belle Aurore', value: '"La Belle Aurore", cursive', sample: 'French Elegance' },
+      { name: 'Sacramento', value: '"Sacramento", cursive', sample: 'Elegant Script' },
+      { name: 'Great Vibes', value: '"Great Vibes", cursive', sample: 'Formal Script' },
+      { name: 'Allura', value: '"Allura", cursive', sample: 'Wedding Style' },
+      { name: 'Alex Brush', value: '"Alex Brush", cursive', sample: 'Brush Lettering' },
+      { name: 'Tangerine', value: '"Tangerine", cursive', sample: 'Calligraphy' },
+      { name: 'Yellowtail', value: '"Yellowtail", cursive', sample: 'Retro Script' },
+      { name: 'Marck Script', value: '"Marck Script", cursive', sample: 'Casual Elegant' },
+      { name: 'Courgette', value: '"Courgette", cursive', sample: 'Medium Weight' },
+      { name: 'Cookie', value: '"Cookie", cursive', sample: 'Sweet Script' },
+      { name: 'Damion', value: '"Damion", cursive', sample: 'Bold Script' },
+      { name: 'Mr Dafoe', value: '"Mr Dafoe", cursive', sample: 'Signature Style' },
+      { name: 'Niconne', value: '"Niconne", cursive', sample: 'Romantic' },
+      { name: 'Norican', value: '"Norican", cursive', sample: 'Flowing Script' },
+      { name: 'Pinyon Script', value: '"Pinyon Script", cursive', sample: 'Formal Cursive' },
+      { name: 'Rouge Script', value: '"Rouge Script", cursive', sample: 'Vintage Hand' },
     ]
   },
   {
@@ -155,6 +198,9 @@ const FONT_CATEGORIES = [
       { name: 'Fredoka One', value: '"Fredoka One", cursive', sample: 'Rounded Fun' },
       { name: 'Bangers', value: '"Bangers", cursive', sample: 'COMIC STYLE' },
       { name: 'Russo One', value: '"Russo One", sans-serif', sample: 'Sporty Bold' },
+      { name: 'Bungee', value: '"Bungee", cursive', sample: 'VERTICAL DISPLAY' },
+      { name: 'Passion One', value: '"Passion One", cursive', sample: 'BOLD IMPACT' },
+      { name: 'Monoton', value: '"Monoton", cursive', sample: 'NEON STYLE' },
     ]
   },
   {
@@ -166,9 +212,16 @@ const FONT_CATEGORIES = [
       { name: 'Source Code Pro', value: '"Source Code Pro", monospace', sample: 'console.log()' },
       { name: 'JetBrains Mono', value: '"JetBrains Mono", monospace', sample: 'let x = 42;' },
       { name: 'IBM Plex Mono', value: '"IBM Plex Mono", monospace', sample: 'import { }' },
+      { name: 'Roboto Mono', value: '"Roboto Mono", monospace', sample: 'async await' },
+      { name: 'Inconsolata', value: '"Inconsolata", monospace', sample: 'if (true) {}' },
     ]
   }
 ];
+
+// Helper to get all fonts flattened
+const getAllFonts = () => {
+  return FONT_CATEGORIES.flatMap(cat => cat.fonts);
+};
 
 const FONT_WEIGHTS = [
   { name: 'Light', value: '300' },
@@ -237,6 +290,18 @@ export const RichTextEditor = ({
   const [historyIndex, setHistoryIndex] = useState(0);
   const [fontPickerOpen, setFontPickerOpen] = useState(false);
   const [fontSizePickerOpen, setFontSizePickerOpen] = useState(false);
+  const [favoriteFonts, setFavoriteFonts] = useState<string[]>(() => getFavorites());
+
+  const toggleFavorite = useCallback((fontValue: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFavoriteFonts(prev => {
+      const newFavorites = prev.includes(fontValue)
+        ? prev.filter(f => f !== fontValue)
+        : [...prev, fontValue];
+      saveFavorites(newFavorites);
+      return newFavorites;
+    });
+  }, []);
   
   // Track if we're in a composition (IME/autocomplete) to prevent crashes on Android
   const isComposingRef = useRef(false);
@@ -705,12 +770,79 @@ export const RichTextEditor = ({
               <span className="text-xs font-semibold">Aa</span>
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-72 max-h-[60vh] overflow-y-auto p-0 rounded-2xl shadow-xl border-0" sideOffset={8}>
+          <PopoverContent className="w-80 max-h-[70vh] overflow-y-auto p-0 rounded-2xl shadow-xl border-0" sideOffset={8}>
             <div className="p-4 border-b bg-gradient-to-r from-primary/10 to-primary/5 rounded-t-2xl">
               <h4 className="font-bold text-base text-foreground">Choose Font</h4>
-              <p className="text-xs text-muted-foreground mt-0.5">Select a font style for your note</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Tap star to add to favorites</p>
             </div>
             <div className="p-3 space-y-4">
+              {/* Favorites Section */}
+              {favoriteFonts.length > 0 && (
+                <div>
+                  <h5 className="text-[10px] font-bold text-amber-500 uppercase tracking-widest px-1 mb-2 flex items-center gap-1">
+                    <Star className="h-3 w-3 fill-amber-500" />
+                    Favorites
+                  </h5>
+                  <div className="grid gap-1.5">
+                    {getAllFonts()
+                      .filter(font => favoriteFonts.includes(font.value))
+                      .map((font) => {
+                        const isSelected = fontFamily === font.value;
+                        const isFavorite = true;
+                        return (
+                          <button
+                            key={font.value}
+                            onClick={() => {
+                              onFontFamilyChange(font.value);
+                              setFontPickerOpen(false);
+                            }}
+                            className={cn(
+                              "w-full text-left px-3 py-3 rounded-xl transition-all duration-200 border-2 relative",
+                              isSelected 
+                                ? "bg-primary border-primary shadow-lg scale-[1.02]" 
+                                : "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 hover:border-amber-400"
+                            )}
+                          >
+                            <button
+                              type="button"
+                              onClick={(e) => toggleFavorite(font.value, e)}
+                              className="absolute top-2 right-2 p-1.5 rounded-full hover:bg-black/10 transition-colors"
+                            >
+                              <Star className={cn(
+                                "h-4 w-4",
+                                isFavorite ? "fill-amber-500 text-amber-500" : "text-muted-foreground"
+                              )} />
+                            </button>
+                            <div className="flex items-center gap-2 pr-8">
+                              <span className={cn(
+                                "text-xs font-semibold",
+                                isSelected ? "text-primary-foreground" : "text-foreground"
+                              )}>
+                                {font.name}
+                              </span>
+                              {isSelected && (
+                                <div className="w-4 h-4 rounded-full bg-primary-foreground/20 flex items-center justify-center">
+                                  <span className="text-primary-foreground text-[10px]">✓</span>
+                                </div>
+                              )}
+                            </div>
+                            <p 
+                              className={cn(
+                                "text-base mt-1 leading-tight",
+                                isSelected ? "text-primary-foreground/90" : "text-muted-foreground"
+                              )}
+                              style={{ fontFamily: font.value }}
+                            >
+                              {font.sample}
+                            </p>
+                          </button>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
+
+              {/* All Categories */}
               {FONT_CATEGORIES.map((category) => (
                 <div key={category.category}>
                   <h5 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1 mb-2">
@@ -719,6 +851,7 @@ export const RichTextEditor = ({
                   <div className="grid gap-1.5">
                     {category.fonts.map((font) => {
                       const isSelected = fontFamily === font.value;
+                      const isFavorite = favoriteFonts.includes(font.value);
                       return (
                         <button
                           key={font.value}
@@ -727,13 +860,23 @@ export const RichTextEditor = ({
                             setFontPickerOpen(false);
                           }}
                           className={cn(
-                            "w-full text-left px-3 py-3 rounded-xl transition-all duration-200 border-2",
+                            "w-full text-left px-3 py-3 rounded-xl transition-all duration-200 border-2 relative",
                             isSelected 
                               ? "bg-primary border-primary shadow-lg scale-[1.02]" 
                               : "bg-card border-transparent hover:border-primary/30 hover:bg-secondary/50"
                           )}
                         >
-                          <div className="flex items-center justify-between gap-2">
+                          <button
+                            type="button"
+                            onClick={(e) => toggleFavorite(font.value, e)}
+                            className="absolute top-2 right-2 p-1.5 rounded-full hover:bg-black/10 transition-colors"
+                          >
+                            <Star className={cn(
+                              "h-4 w-4 transition-all",
+                              isFavorite ? "fill-amber-500 text-amber-500" : isSelected ? "text-primary-foreground/50" : "text-muted-foreground/40 hover:text-amber-400"
+                            )} />
+                          </button>
+                          <div className="flex items-center gap-2 pr-8">
                             <span className={cn(
                               "text-xs font-semibold",
                               isSelected ? "text-primary-foreground" : "text-foreground"
@@ -741,14 +884,14 @@ export const RichTextEditor = ({
                               {font.name}
                             </span>
                             {isSelected && (
-                              <div className="w-5 h-5 rounded-full bg-primary-foreground/20 flex items-center justify-center">
-                                <span className="text-primary-foreground text-xs">✓</span>
+                              <div className="w-4 h-4 rounded-full bg-primary-foreground/20 flex items-center justify-center">
+                                <span className="text-primary-foreground text-[10px]">✓</span>
                               </div>
                             )}
                           </div>
                           <p 
                             className={cn(
-                              "text-base mt-1.5 leading-tight",
+                              "text-base mt-1 leading-tight",
                               isSelected ? "text-primary-foreground/90" : "text-muted-foreground"
                             )}
                             style={{ fontFamily: font.value }}
