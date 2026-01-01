@@ -1,27 +1,20 @@
-// Native Filesystem storage for task media (images + voice recordings)
-// Uses Capacitor Filesystem for unlimited device storage on mobile
-// Falls back to IndexedDB for web browser
-
-import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
-import { Capacitor } from '@capacitor/core';
+// IndexedDB storage for task media (images + voice recordings)
+// Uses IndexedDB for cross-platform storage (web + native via Capacitor)
 
 export type TaskMediaKind = 'image' | 'audio';
-
-const MEDIA_FOLDER = 'task-media';
-const isNative = Capacitor.isNativePlatform();
 
 // Memory cache for resolved URLs
 const cache = new Map<string, string>();
 
 // ============ Reference Helpers ============
 
-export const makeTaskMediaRef = (kind: TaskMediaKind, id: string) => `fs:${kind}:${id}`;
+export const makeTaskMediaRef = (kind: TaskMediaKind, id: string) => `idb:${kind}:${id}`;
 
 export const parseTaskMediaRef = (
   ref: string
 ): { kind: TaskMediaKind; id: string } | null => {
-  // Support both new fs: and legacy idb: refs
-  if (!ref.startsWith('fs:') && !ref.startsWith('idb:')) return null;
+  // Support both idb: and legacy fs: refs
+  if (!ref.startsWith('idb:') && !ref.startsWith('fs:')) return null;
   const parts = ref.split(':');
   if (parts.length < 3) return null;
   const kind = parts[1] as TaskMediaKind;
@@ -34,82 +27,6 @@ export const parseTaskMediaRef = (
 export const isTaskMediaRef = (ref?: string | null) => {
   if (!ref) return false;
   return !!parseTaskMediaRef(ref);
-};
-
-// ============ File Path Helpers ============
-
-const getFilePath = (kind: TaskMediaKind, id: string): string => {
-  const ext = kind === 'image' ? 'png' : 'webm';
-  return `${MEDIA_FOLDER}/${kind}/${id}.${ext}`;
-};
-
-const getBase64FromDataUrl = (dataUrl: string): string => {
-  const idx = dataUrl.indexOf(',');
-  return idx >= 0 ? dataUrl.substring(idx + 1) : dataUrl;
-};
-
-const getMimeFromDataUrl = (dataUrl: string): string => {
-  const match = dataUrl.match(/^data:([^;,]+)/);
-  return match ? match[1] : 'application/octet-stream';
-};
-
-// ============ Native Filesystem Functions ============
-
-const ensureDirectory = async (kind: TaskMediaKind): Promise<void> => {
-  try {
-    await Filesystem.mkdir({
-      path: `${MEDIA_FOLDER}/${kind}`,
-      directory: Directory.Data,
-      recursive: true,
-    });
-  } catch (e: any) {
-    // Directory might already exist
-    if (!e.message?.includes('exists')) {
-      console.warn('mkdir warning:', e);
-    }
-  }
-};
-
-const saveToFilesystem = async (kind: TaskMediaKind, id: string, dataUrl: string): Promise<void> => {
-  await ensureDirectory(kind);
-  const path = getFilePath(kind, id);
-  const base64 = getBase64FromDataUrl(dataUrl);
-  
-  await Filesystem.writeFile({
-    path,
-    data: base64,
-    directory: Directory.Data,
-  });
-};
-
-const getFromFilesystem = async (kind: TaskMediaKind, id: string): Promise<string | null> => {
-  try {
-    const path = getFilePath(kind, id);
-    const result = await Filesystem.readFile({
-      path,
-      directory: Directory.Data,
-    });
-    
-    // Reconstruct data URL
-    const mimeType = kind === 'image' ? 'image/png' : 'audio/webm';
-    const base64 = typeof result.data === 'string' ? result.data : '';
-    return `data:${mimeType};base64,${base64}`;
-  } catch (e) {
-    console.warn('File not found:', e);
-    return null;
-  }
-};
-
-const deleteFromFilesystem = async (kind: TaskMediaKind, id: string): Promise<void> => {
-  try {
-    const path = getFilePath(kind, id);
-    await Filesystem.deleteFile({
-      path,
-      directory: Directory.Data,
-    });
-  } catch (e) {
-    console.warn('Delete file warning:', e);
-  }
 };
 
 // ============ IndexedDB Fallback for Web ============
@@ -194,14 +111,10 @@ const deleteFromIndexedDB = async (kind: TaskMediaKind, id: string): Promise<voi
   });
 };
 
-// ============ Public API (Auto-selects native vs web) ============
+// ============ Public API (Uses IndexedDB for all platforms) ============
 
 export const saveTaskMedia = async (kind: TaskMediaKind, id: string, dataUrl: string): Promise<void> => {
-  if (isNative) {
-    await saveToFilesystem(kind, id, dataUrl);
-  } else {
-    await saveToIndexedDB(kind, id, dataUrl);
-  }
+  await saveToIndexedDB(kind, id, dataUrl);
   cache.set(makeTaskMediaRef(kind, id), dataUrl);
 };
 
@@ -210,13 +123,7 @@ export const getTaskMedia = async (kind: TaskMediaKind, id: string): Promise<str
   const cached = cache.get(ref);
   if (cached) return cached;
 
-  let dataUrl: string | null = null;
-  
-  if (isNative) {
-    dataUrl = await getFromFilesystem(kind, id);
-  } else {
-    dataUrl = await getFromIndexedDB(kind, id);
-  }
+  const dataUrl = await getFromIndexedDB(kind, id);
 
   if (dataUrl) {
     cache.set(ref, dataUrl);
@@ -225,11 +132,7 @@ export const getTaskMedia = async (kind: TaskMediaKind, id: string): Promise<str
 };
 
 export const deleteTaskMedia = async (kind: TaskMediaKind, id: string): Promise<void> => {
-  if (isNative) {
-    await deleteFromFilesystem(kind, id);
-  } else {
-    await deleteFromIndexedDB(kind, id);
-  }
+  await deleteFromIndexedDB(kind, id);
   cache.delete(makeTaskMediaRef(kind, id));
 };
 
@@ -244,19 +147,12 @@ export const resolveTaskMediaUrl = async (refOrUrl: string): Promise<string> => 
 // ============ Storage Info ============
 
 export const getStorageInfo = async (): Promise<{ used: number; available: number } | null> => {
-  if (!isNative) {
-    // Web: estimate from navigator.storage
-    if (navigator.storage && navigator.storage.estimate) {
-      const estimate = await navigator.storage.estimate();
-      return {
-        used: estimate.usage || 0,
-        available: estimate.quota || 0,
-      };
-    }
-    return null;
+  if (navigator.storage && navigator.storage.estimate) {
+    const estimate = await navigator.storage.estimate();
+    return {
+      used: estimate.usage || 0,
+      available: estimate.quota || 0,
+    };
   }
-  
-  // Native: no easy way to get total, but files are stored in app's data directory
-  // which has essentially unlimited capacity (device storage)
   return null;
 };
