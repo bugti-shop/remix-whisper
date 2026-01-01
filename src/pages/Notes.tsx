@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { BottomNavigation } from '@/components/BottomNavigation';
 import { Note } from '@/types/note';
 import { NoteEditor } from '@/components/NoteEditor';
-import { Layers, Settings, Pin, Download, ListTodo, Link2, FileText, Archive, ArchiveRestore, Trash2, RotateCcw, Sun, Moon } from 'lucide-react';
+import { Layers, Settings, Pin, Download, ListTodo, FileText, Archive, ArchiveRestore, Trash2, RotateCcw, Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { exportNoteToDocx } from '@/utils/exportToDocx';
@@ -10,7 +10,6 @@ import { exportNoteToMarkdown } from '@/utils/markdownExport';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import appLogo from '@/assets/app-logo.png';
-import URLClipperSheet from '@/components/URLClipperSheet';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import {
@@ -60,7 +59,6 @@ const Notes = () => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
-  const [isClipperOpen, setIsClipperOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'active' | 'archived' | 'trash'>('active');
 
   useEffect(() => {
@@ -300,15 +298,6 @@ const Notes = () => {
                 title="Toggle theme"
               >
                 {isDarkMode ? <Sun className="h-4 w-4 sm:h-5 sm:w-5" /> : <Moon className="h-4 w-4 sm:h-5 sm:w-5" />}
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => setIsClipperOpen(true)}
-                title="Clip from URL"
-                className="h-7 w-7 xs:h-8 xs:w-8 sm:h-10 sm:w-10 touch-target"
-              >
-                <Link2 className="h-4 w-4 sm:h-5 sm:w-5" />
               </Button>
               <Button
                 size="icon"
@@ -553,12 +542,6 @@ const Notes = () => {
         onSave={handleSaveNote}
         allNotes={notes}
         returnTo="/notes"
-      />
-
-      <URLClipperSheet
-        isOpen={isClipperOpen}
-        onClose={() => setIsClipperOpen(false)}
-        onSave={handleSaveNote}
       />
 
       <BottomNavigation />
