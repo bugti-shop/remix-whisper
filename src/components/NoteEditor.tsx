@@ -92,7 +92,7 @@ export const NoteEditor = ({ note, isOpen, onClose, onSave, defaultType = 'regul
 
   const getCurrentNoteId = useCallback(() => {
     if (note?.id) return note.id;
-    if (!draftIdRef.current) draftIdRef.current = Date.now().toString();
+    if (!draftIdRef.current) draftIdRef.current = `note-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     return draftIdRef.current;
   }, [note?.id]);
 
@@ -182,6 +182,9 @@ export const NoteEditor = ({ note, isOpen, onClose, onSave, defaultType = 'regul
       setCodeContent(note.codeContent || '');
       setCodeLanguage(note.codeLanguage || 'auto');
     } else {
+      // Reset draft ID for new notes to prevent overwriting
+      draftIdRef.current = null;
+      
       setNoteType(defaultType);
       setTitle('');
       setContent('');
