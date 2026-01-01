@@ -820,33 +820,33 @@ const Index = () => {
               New Note
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="center" className="mb-2 w-48">
-            <DropdownMenuItem onClick={() => handleCreateNote('sticky')} className="gap-2">
-              <StickyNote className="h-4 w-4" />
+          <DropdownMenuContent align="center" className="mb-2 w-56 p-2">
+            <DropdownMenuItem onClick={() => handleCreateNote('sticky')} className="gap-3 py-3 px-4 text-base cursor-pointer">
+              <StickyNote className="h-5 w-5 text-yellow-500" />
               Sticky Note
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleCreateNote('lined')} className="gap-2">
-              <FileText className="h-4 w-4" />
+            <DropdownMenuItem onClick={() => handleCreateNote('lined')} className="gap-3 py-3 px-4 text-base cursor-pointer">
+              <FileText className="h-5 w-5 text-blue-500" />
               Lined Note
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleCreateNote('regular')} className="gap-2">
-              <FileEdit className="h-4 w-4" />
+            <DropdownMenuItem onClick={() => handleCreateNote('regular')} className="gap-3 py-3 px-4 text-base cursor-pointer">
+              <FileEdit className="h-5 w-5 text-green-500" />
               Regular Note
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleCreateNote('sketch')} className="gap-2">
-              <Pen className="h-4 w-4" />
+            <DropdownMenuItem onClick={() => handleCreateNote('sketch')} className="gap-3 py-3 px-4 text-base cursor-pointer">
+              <Pen className="h-5 w-5 text-purple-500" />
               Sketch Note
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleCreateNote('code')} className="gap-2">
-              <FileCode className="h-4 w-4" />
+            <DropdownMenuItem onClick={() => handleCreateNote('code')} className="gap-3 py-3 px-4 text-base cursor-pointer">
+              <FileCode className="h-5 w-5 text-orange-500" />
               Code Note
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleCreateNote('mindmap')} className="gap-2">
-              <GitBranch className="h-4 w-4" />
+            <DropdownMenuItem onClick={() => handleCreateNote('mindmap')} className="gap-3 py-3 px-4 text-base cursor-pointer">
+              <GitBranch className="h-5 w-5 text-cyan-500" />
               Mind Map
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleCreateNote('expense')} className="gap-2">
-              <Receipt className="h-4 w-4" />
+            <DropdownMenuItem onClick={() => handleCreateNote('expense')} className="gap-3 py-3 px-4 text-base cursor-pointer">
+              <Receipt className="h-5 w-5 text-pink-500" />
               Expense Tracker
             </DropdownMenuItem>
           </DropdownMenuContent>
