@@ -23,6 +23,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { getSuggestedFolders } from '@/utils/personalization';
@@ -825,26 +826,32 @@ const Index = () => {
               <StickyNote className="h-4 w-4" />
               Sticky Note
             </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => handleCreateNote('lined')} className="gap-2">
               <FileText className="h-4 w-4" />
               Lined Note
             </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => handleCreateNote('regular')} className="gap-2">
               <FileEdit className="h-4 w-4" />
               Regular Note
             </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => handleCreateNote('sketch')} className="gap-2">
               <Pen className="h-4 w-4" />
               Sketch Note
             </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => handleCreateNote('code')} className="gap-2">
               <FileCode className="h-4 w-4" />
               Code Note
             </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => handleCreateNote('mindmap')} className="gap-2">
               <GitBranch className="h-4 w-4" />
               Mind Map
             </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => handleCreateNote('expense')} className="gap-2">
               <Receipt className="h-4 w-4" />
               Expense Tracker
