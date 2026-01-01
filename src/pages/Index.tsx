@@ -409,16 +409,15 @@ const Index = () => {
   });
 
   return (
-    <div className="min-h-screen min-h-screen-dynamic bg-background pb-20 sm:pb-24 animate-fade-in flex justify-center">
-      <div className="w-full max-w-lg lg:max-w-2xl">
-        <header 
-          className="border-b sticky top-0 bg-background z-10"
-          style={{
-            WebkitTransform: 'translateZ(0)',
-            transform: 'translateZ(0)',
-          }}
-        >
-          <div className="px-2 xs:px-3 sm:px-4 py-2">
+    <div className="min-h-screen min-h-screen-dynamic bg-background pb-20 sm:pb-24 animate-fade-in">
+      <header 
+        className="border-b sticky top-0 bg-background z-10"
+        style={{
+          WebkitTransform: 'translateZ(0)',
+          transform: 'translateZ(0)',
+        }}
+      >
+        <div className="container mx-auto px-2 xs:px-3 sm:px-4 py-2">
           <div className="flex items-center justify-between mb-2 xs:mb-3 sm:mb-4 gap-1 xs:gap-2">
             <div className="flex items-center gap-1.5 xs:gap-2 min-w-0 flex-shrink-0">
               <img src={appLogo} alt="Npd" className="h-6 w-6 xs:h-7 xs:w-7 sm:h-8 sm:w-8 flex-shrink-0" style={{ minWidth: '24px', minHeight: '24px' }} />
@@ -475,7 +474,7 @@ const Index = () => {
         </div>
       </header>
 
-      <main className="px-2 xs:px-3 sm:px-4 py-2 xs:py-3">
+      <main className="container mx-auto px-2 xs:px-3 sm:px-4 py-2 xs:py-3">
         <PersonalizedTips />
 
         {/* Upcoming Reminders Section */}
@@ -868,7 +867,6 @@ const Index = () => {
       )}
 
       <BottomNavigation />
-      </div>
     </div>
   );
 };
