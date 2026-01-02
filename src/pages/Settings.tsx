@@ -1,5 +1,5 @@
 import { BottomNavigation } from '@/components/BottomNavigation';
-import { ChevronRight, Settings as SettingsIcon, Crown, CreditCard, Palette, Check, Clock, Vibrate } from 'lucide-react';
+import { ChevronRight, Settings as SettingsIcon, Crown, CreditCard, Palette, Check, Clock, Vibrate, Cloud } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import appLogo from '@/assets/app-logo.png';
@@ -7,6 +7,7 @@ import { useRevenueCat } from '@/contexts/RevenueCatContext';
 import { Capacitor } from '@capacitor/core';
 import { useDarkMode, themes, ThemeId } from '@/hooks/useDarkMode';
 import { differenceInDays, differenceInHours, differenceInMinutes, addDays } from 'date-fns';
+import SyncSettings from '@/components/SyncSettings';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,6 +37,7 @@ const Settings = () => {
   const [showPrivacyDialog, setShowPrivacyDialog] = useState(false);
   const [showHelpDialog, setShowHelpDialog] = useState(false);
   const [showThemeDialog, setShowThemeDialog] = useState(false);
+  const [showSyncDialog, setShowSyncDialog] = useState(false);
   const [showHapticDialog, setShowHapticDialog] = useState(false);
   const [hapticIntensity, setHapticIntensity] = useState<'off' | 'light' | 'medium' | 'heavy'>(() => {
     return (localStorage.getItem('haptic_intensity') as 'off' | 'light' | 'medium' | 'heavy') || 'medium';
@@ -258,6 +260,21 @@ const Settings = () => {
                   {hapticIntensity === 'off' ? 'Off' : hapticIntensity.charAt(0).toUpperCase() + hapticIntensity.slice(1)}
                 </span>
               </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </button>
+          </div>
+
+          {/* Sync & Integrations */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 px-4 py-3">
+              <Cloud className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground text-sm font-medium">Sync & Integrations</span>
+            </div>
+            <button
+              onClick={() => setShowSyncDialog(true)}
+              className="w-full flex items-center justify-between px-4 py-3 border-b border-border hover:bg-muted transition-colors"
+            >
+              <span className="text-foreground text-sm">Cloud Sync & Imports</span>
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </button>
           </div>
@@ -548,6 +565,18 @@ const Settings = () => {
               </button>
             ))}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Sync Settings Dialog */}
+      <Dialog open={showSyncDialog} onOpenChange={setShowSyncDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] p-0">
+          <DialogHeader className="px-4 pt-4 pb-2">
+            <DialogTitle>Sync & Integrations</DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="h-[75vh]">
+            <SyncSettings />
+          </ScrollArea>
         </DialogContent>
       </Dialog>
 
