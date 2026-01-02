@@ -1,26 +1,20 @@
 import { useState, useEffect } from "react";
 import { 
-  Cloud, 
-  Calendar, 
   Link2, 
   Import, 
   Check, 
-  X, 
   Eye, 
   EyeOff,
   RefreshCw,
   ExternalLink,
-  FileJson,
   ChevronRight,
   Smartphone,
   Loader2
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -31,6 +25,14 @@ import {
 } from "@/components/ui/accordion";
 import { useSyncBridge } from "@/hooks/useSyncBridge";
 
+// Import logos
+import logoGoogleCalendar from "@/assets/logo-google-calendar.png";
+import logoClickUp from "@/assets/logo-clickup.png";
+import logoNotion from "@/assets/logo-notion.png";
+import logoHubSpot from "@/assets/logo-hubspot.png";
+import logoTickTick from "@/assets/logo-ticktick.png";
+import logoTodoist from "@/assets/logo-todoist.png";
+
 interface ConnectionStatus {
   connected: boolean;
   lastSync?: string;
@@ -38,12 +40,6 @@ interface ConnectionStatus {
 }
 
 interface SyncSettingsState {
-  cloudSync: {
-    enabled: boolean;
-    autoSync: boolean;
-    syncInterval: number;
-    wifiOnly: boolean;
-  };
   calendar: {
     enabled: boolean;
     twoWaySync: boolean;
@@ -57,8 +53,6 @@ interface SyncSettingsState {
   imports: {
     ticktick: ConnectionStatus;
     todoist: ConnectionStatus;
-    googleTasks: ConnectionStatus;
-    microsoftTodo: ConnectionStatus;
   };
   apiKeys: {
     clickup: string;
@@ -78,28 +72,18 @@ const SyncSettings = () => {
   const {
     isNative,
     isLoading: bridgeLoading,
-    cloudSyncSettings,
     calendarSettings,
     connections,
     lastSyncTime,
-    updateCloudSyncSettings,
-    updateCalendarSettings,
     connectGoogleCalendar,
     saveApiToken,
     disconnectService,
     connectOAuthService,
     importTasks,
-    syncNow,
     syncIntegration,
   } = useSyncBridge();
   
   const [settings, setSettings] = useState<SyncSettingsState>({
-    cloudSync: {
-      enabled: false,
-      autoSync: true,
-      syncInterval: 15,
-      wifiOnly: false,
-    },
     calendar: {
       enabled: false,
       twoWaySync: true,
@@ -113,8 +97,6 @@ const SyncSettings = () => {
     imports: {
       ticktick: { connected: false },
       todoist: { connected: false },
-      googleTasks: { connected: false },
-      microsoftTodo: { connected: false },
     },
     apiKeys: {
       clickup: "",
@@ -130,7 +112,6 @@ const SyncSettings = () => {
     if (!bridgeLoading) {
       setSettings(prev => ({
         ...prev,
-        cloudSync: cloudSyncSettings,
         calendar: calendarSettings,
         integrations: {
           clickup: connections.clickup,
@@ -140,12 +121,10 @@ const SyncSettings = () => {
         imports: {
           ticktick: connections.ticktick,
           todoist: connections.todoist,
-          googleTasks: connections.googleTasks,
-          microsoftTodo: connections.microsoftTodo,
         },
       }));
     }
-  }, [bridgeLoading, cloudSyncSettings, calendarSettings, connections]);
+  }, [bridgeLoading, calendarSettings, connections]);
 
   const toggleApiKeyVisibility = (key: string) => {
     setShowApiKey(prev => ({ ...prev, [key]: !prev[key] }));
@@ -169,8 +148,8 @@ const SyncSettings = () => {
             variant: "destructive",
           });
         }
-      } else if (['ticktick', 'googleTasks', 'microsoftTodo'].includes(service.toLowerCase())) {
-        const result = await connectOAuthService(service.toLowerCase() as 'ticktick' | 'googleTasks' | 'microsoftTodo');
+      } else if (['ticktick'].includes(service.toLowerCase())) {
+        const result = await connectOAuthService(service.toLowerCase() as 'ticktick');
         if (result.success) {
           toast({
             title: "Connected",
@@ -228,7 +207,7 @@ const SyncSettings = () => {
     setIsLoading(prev => ({ ...prev, [`import_${service}`]: true }));
     
     try {
-      const result = await importTasks(service as 'ticktick' | 'todoist' | 'googleTasks' | 'microsoftTodo');
+      const result = await importTasks(service as 'ticktick' | 'todoist');
       
       if (result.success) {
         toast({
@@ -293,83 +272,6 @@ const SyncSettings = () => {
     setIsLoading(prev => ({ ...prev, [`save_${service}`]: false }));
   };
 
-  const handleSyncNow = async () => {
-    setIsLoading(prev => ({ ...prev, syncNow: true }));
-    
-    try {
-      const result = await syncNow();
-      
-      if (result.success) {
-        toast({
-          title: "Sync completed",
-          description: result.message,
-        });
-      } else {
-        toast({
-          title: "Sync failed",
-          description: result.message,
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to sync",
-        variant: "destructive",
-      });
-    }
-    
-    setIsLoading(prev => ({ ...prev, syncNow: false }));
-  };
-
-  const handleCloudSyncToggle = async (enabled: boolean) => {
-    await updateCloudSyncSettings({ enabled });
-    setSettings(prev => ({
-      ...prev,
-      cloudSync: { ...prev.cloudSync, enabled }
-    }));
-  };
-
-  const handleAutoSyncToggle = async (autoSync: boolean) => {
-    await updateCloudSyncSettings({ autoSync });
-    setSettings(prev => ({
-      ...prev,
-      cloudSync: { ...prev.cloudSync, autoSync }
-    }));
-  };
-
-  const handleWifiOnlyToggle = async (wifiOnly: boolean) => {
-    await updateCloudSyncSettings({ wifiOnly });
-    setSettings(prev => ({
-      ...prev,
-      cloudSync: { ...prev.cloudSync, wifiOnly }
-    }));
-  };
-
-  const handleSyncIntervalChange = async (syncInterval: number) => {
-    await updateCloudSyncSettings({ syncInterval });
-    setSettings(prev => ({
-      ...prev,
-      cloudSync: { ...prev.cloudSync, syncInterval }
-    }));
-  };
-
-  const handleCalendarToggle = async (enabled: boolean) => {
-    await updateCalendarSettings({ enabled });
-    setSettings(prev => ({
-      ...prev,
-      calendar: { ...prev.calendar, enabled }
-    }));
-  };
-
-  const handleTwoWaySyncToggle = async (twoWaySync: boolean) => {
-    await updateCalendarSettings({ twoWaySync });
-    setSettings(prev => ({
-      ...prev,
-      calendar: { ...prev.calendar, twoWaySync }
-    }));
-  };
-
   const renderConnectionBadge = (status: ConnectionStatus) => {
     if (status.connected) {
       return (
@@ -416,101 +318,12 @@ const SyncSettings = () => {
         </div>
       )}
 
-      {/* Cloud Sync Section */}
+      {/* Google Calendar Section */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Cloud className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <CardTitle className="text-lg">Cloud Sync</CardTitle>
-              <CardDescription>Sync your data across all devices using Firebase</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <Label htmlFor="cloud-sync">Enable Cloud Sync</Label>
-              <p className="text-sm text-muted-foreground">Sync notes, tasks, and folders</p>
-            </div>
-            <Switch
-              id="cloud-sync"
-              checked={settings.cloudSync.enabled}
-              onCheckedChange={handleCloudSyncToggle}
-            />
-          </div>
-          
-          {settings.cloudSync.enabled && (
-            <>
-              <Separator />
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="auto-sync">Auto Sync</Label>
-                    <p className="text-sm text-muted-foreground">Automatically sync changes</p>
-                  </div>
-                  <Switch
-                    id="auto-sync"
-                    checked={settings.cloudSync.autoSync}
-                    onCheckedChange={handleAutoSyncToggle}
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="wifi-only">Wi-Fi Only</Label>
-                    <p className="text-sm text-muted-foreground">Only sync on Wi-Fi connection</p>
-                  </div>
-                  <Switch
-                    id="wifi-only"
-                    checked={settings.cloudSync.wifiOnly}
-                    onCheckedChange={handleWifiOnlyToggle}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label>Sync Interval</Label>
-                  <div className="flex gap-2">
-                    {[5, 15, 30, 60].map((interval) => (
-                      <Button
-                        key={interval}
-                        variant={settings.cloudSync.syncInterval === interval ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => handleSyncIntervalChange(interval)}
-                      >
-                        {interval}m
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-                
-                <Button 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={handleSyncNow}
-                  disabled={isLoading.syncNow}
-                >
-                  {isLoading.syncNow ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                  )}
-                  Sync Now
-                </Button>
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Calendar Sync Section */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-orange-500/10">
-              <Calendar className="h-5 w-5 text-orange-500" />
+            <div className="p-2 rounded-lg bg-background">
+              <img src={logoGoogleCalendar} alt="Google Calendar" className="h-8 w-8" />
             </div>
             <div>
               <CardTitle className="text-lg">Google Calendar</CardTitle>
@@ -519,58 +332,27 @@ const SyncSettings = () => {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <Label htmlFor="calendar-sync">Enable Calendar Sync</Label>
-              <p className="text-sm text-muted-foreground">Create calendar events from tasks</p>
-            </div>
-            <Switch
-              id="calendar-sync"
-              checked={settings.calendar.enabled}
-              onCheckedChange={handleCalendarToggle}
-            />
-          </div>
-          
-          {settings.calendar.enabled && (
-            <>
-              <Separator />
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="two-way-sync">Two-Way Sync</Label>
-                    <p className="text-sm text-muted-foreground">Sync changes both ways</p>
-                  </div>
-                  <Switch
-                    id="two-way-sync"
-                    checked={settings.calendar.twoWaySync}
-                    onCheckedChange={handleTwoWaySyncToggle}
-                  />
-                </div>
-                
-                <Button 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => handleConnect("Google Calendar")}
-                  disabled={isLoading["Google Calendar"]}
-                >
-                  {isLoading["Google Calendar"] ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <img 
-                      src="https://www.google.com/favicon.ico" 
-                      alt="Google" 
-                      className="h-4 w-4 mr-2"
-                    />
-                  )}
-                  {connections.googleCalendar.connected ? 'Connected' : 'Connect Google Account'}
-                </Button>
-                {connections.googleCalendar.email && (
-                  <p className="text-xs text-muted-foreground text-center">
-                    Connected as {connections.googleCalendar.email}
-                  </p>
-                )}
-              </div>
-            </>
+          <Button 
+            variant="outline" 
+            className="w-full"
+            onClick={() => handleConnect("Google Calendar")}
+            disabled={isLoading["Google Calendar"]}
+          >
+            {isLoading["Google Calendar"] ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <img 
+                src="https://www.google.com/favicon.ico" 
+                alt="Google" 
+                className="h-4 w-4 mr-2"
+              />
+            )}
+            {connections.googleCalendar.connected ? 'Connected' : 'Connect Google Account'}
+          </Button>
+          {connections.googleCalendar.email && (
+            <p className="text-xs text-muted-foreground text-center">
+              Connected as {connections.googleCalendar.email}
+            </p>
           )}
         </CardContent>
       </Card>
@@ -589,15 +371,13 @@ const SyncSettings = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <Accordion type="single" collapsible className="w-full">
+          <Accordion type="single" collapsible className="w-full" defaultValue="">
             {/* ClickUp */}
             <AccordionItem value="clickup">
               <AccordionTrigger className="hover:no-underline">
                 <div className="flex items-center justify-between w-full pr-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
-                      C
-                    </div>
+                    <img src={logoClickUp} alt="ClickUp" className="w-8 h-8 rounded-lg" />
                     <span>ClickUp</span>
                   </div>
                   {renderConnectionBadge(settings.integrations.clickup)}
@@ -650,9 +430,7 @@ const SyncSettings = () => {
               <AccordionTrigger className="hover:no-underline">
                 <div className="flex items-center justify-between w-full pr-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-foreground flex items-center justify-center text-background font-bold text-sm">
-                      N
-                    </div>
+                    <img src={logoNotion} alt="Notion" className="w-8 h-8 rounded-lg" />
                     <span>Notion</span>
                   </div>
                   {renderConnectionBadge(settings.integrations.notion)}
@@ -705,9 +483,7 @@ const SyncSettings = () => {
               <AccordionTrigger className="hover:no-underline">
                 <div className="flex items-center justify-between w-full pr-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-orange-500 flex items-center justify-center text-white font-bold text-sm">
-                      H
-                    </div>
+                    <img src={logoHubSpot} alt="HubSpot" className="w-8 h-8 rounded-lg" />
                     <span>HubSpot</span>
                   </div>
                   {renderConnectionBadge(settings.integrations.hubspot)}
@@ -758,7 +534,7 @@ const SyncSettings = () => {
         </CardContent>
       </Card>
 
-      {/* Task Import Section */}
+      {/* Task Import Section - Only TickTick and Todoist */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
@@ -767,20 +543,18 @@ const SyncSettings = () => {
             </div>
             <div>
               <CardTitle className="text-lg">Import Tasks</CardTitle>
-              <CardDescription>Import tasks from other apps (all FREE)</CardDescription>
+              <CardDescription>Import tasks from other apps</CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          <Accordion type="single" collapsible className="w-full">
+          <Accordion type="single" collapsible className="w-full" defaultValue="">
             {/* TickTick */}
             <AccordionItem value="ticktick">
               <AccordionTrigger className="hover:no-underline">
                 <div className="flex items-center justify-between w-full pr-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center text-white font-bold text-sm">
-                      ✓
-                    </div>
+                    <img src={logoTickTick} alt="TickTick" className="w-8 h-8 rounded-lg" />
                     <span>TickTick</span>
                   </div>
                   {renderConnectionBadge(settings.imports.ticktick)}
@@ -833,9 +607,7 @@ const SyncSettings = () => {
               <AccordionTrigger className="hover:no-underline">
                 <div className="flex items-center justify-between w-full pr-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-red-500 flex items-center justify-center text-white font-bold text-sm">
-                      T
-                    </div>
+                    <img src={logoTodoist} alt="Todoist" className="w-8 h-8 rounded-lg" />
                     <span>Todoist</span>
                   </div>
                   {renderConnectionBadge(settings.imports.todoist)}
@@ -892,161 +664,7 @@ const SyncSettings = () => {
                 </Button>
               </AccordionContent>
             </AccordionItem>
-
-            {/* Google Tasks */}
-            <AccordionItem value="google-tasks">
-              <AccordionTrigger className="hover:no-underline">
-                <div className="flex items-center justify-between w-full pr-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-sm">
-                      G
-                    </div>
-                    <span>Google Tasks</span>
-                  </div>
-                  {renderConnectionBadge(settings.imports.googleTasks)}
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="space-y-4 pt-4">
-                <p className="text-sm text-muted-foreground">
-                  Sign in with Google to import all your task lists and tasks.
-                </p>
-                <div className="flex gap-2">
-                  <Button 
-                    className="flex-1"
-                    variant="outline"
-                    onClick={() => handleConnect("Google Tasks")}
-                    disabled={isLoading.googleTasks}
-                  >
-                    {isLoading.googleTasks ? (
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <img 
-                        src="https://www.google.com/favicon.ico" 
-                        alt="Google" 
-                        className="h-4 w-4 mr-2"
-                      />
-                    )}
-                    Sign in with Google
-                  </Button>
-                  {settings.imports.googleTasks.connected && (
-                    <Button 
-                      variant="outline"
-                      onClick={() => handleImportTasks("Google Tasks")}
-                      disabled={isLoading.import_googleTasks}
-                    >
-                      {isLoading.import_googleTasks ? (
-                        <RefreshCw className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Import className="h-4 w-4" />
-                      )}
-                    </Button>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  FREE - Uses Google Tasks API via Google Cloud Console
-                </p>
-              </AccordionContent>
-            </AccordionItem>
-
-            {/* Microsoft To Do */}
-            <AccordionItem value="microsoft-todo">
-              <AccordionTrigger className="hover:no-underline">
-                <div className="flex items-center justify-between w-full pr-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center text-white font-bold text-sm">
-                      M
-                    </div>
-                    <span>Microsoft To Do</span>
-                  </div>
-                  {renderConnectionBadge(settings.imports.microsoftTodo)}
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="space-y-4 pt-4">
-                <p className="text-sm text-muted-foreground">
-                  Sign in with Microsoft to import your task lists and todos.
-                </p>
-                <div className="flex gap-2">
-                  <Button 
-                    className="flex-1"
-                    variant="outline"
-                    onClick={() => handleConnect("Microsoft To Do")}
-                    disabled={isLoading.microsoftTodo}
-                  >
-                    {isLoading.microsoftTodo ? (
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <div className="w-4 h-4 mr-2 bg-gradient-to-br from-blue-500 via-green-500 to-yellow-500 rounded-sm" />
-                    )}
-                    Sign in with Microsoft
-                  </Button>
-                  {settings.imports.microsoftTodo.connected && (
-                    <Button 
-                      variant="outline"
-                      onClick={() => handleImportTasks("Microsoft To Do")}
-                      disabled={isLoading.import_microsoftTodo}
-                    >
-                      {isLoading.import_microsoftTodo ? (
-                        <RefreshCw className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Import className="h-4 w-4" />
-                      )}
-                    </Button>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  FREE - Uses Microsoft Graph API
-                </p>
-              </AccordionContent>
-            </AccordionItem>
-
-            {/* Any.do (File Import) */}
-            <AccordionItem value="anydo">
-              <AccordionTrigger className="hover:no-underline">
-                <div className="flex items-center justify-between w-full pr-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-gray-700 flex items-center justify-center text-white font-bold text-sm">
-                      A
-                    </div>
-                    <span>Any.do</span>
-                  </div>
-                  <Badge variant="outline" className="text-muted-foreground">
-                    File import
-                  </Badge>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="space-y-4 pt-4">
-                <p className="text-sm text-muted-foreground">
-                  Any.do doesn't have a public API. Export your data as JSON from the Any.do app, then import here.
-                </p>
-                <div className="space-y-2">
-                  <p className="text-xs font-medium">How to export from Any.do:</p>
-                  <ol className="text-xs text-muted-foreground list-decimal list-inside space-y-1">
-                    <li>Open Any.do app</li>
-                    <li>Go to Settings → Export Data</li>
-                    <li>Select JSON format</li>
-                    <li>Download and import below</li>
-                  </ol>
-                </div>
-                <Button variant="outline" className="w-full">
-                  <FileJson className="h-4 w-4 mr-2" />
-                  Select JSON File
-                </Button>
-              </AccordionContent>
-            </AccordionItem>
           </Accordion>
-        </CardContent>
-      </Card>
-
-      {/* Info Card */}
-      <Card className="border-dashed">
-        <CardContent className="pt-6">
-          <div className="text-center text-sm text-muted-foreground space-y-2">
-            <p className="font-medium">All integrations are FREE!</p>
-            <p>
-              TickTick, Todoist, Google Tasks, Microsoft To Do, Notion, ClickUp, and HubSpot 
-              all have free tiers with API access.
-            </p>
-          </div>
         </CardContent>
       </Card>
     </div>
