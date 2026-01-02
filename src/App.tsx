@@ -14,6 +14,7 @@ import Notes from "./pages/Notes";
 import NotesCalendar from "./pages/NotesCalendar";
 import WebClipper from "./pages/WebClipper";
 import Settings from "./pages/Settings";
+import SyncSettingsPage from "./pages/SyncSettingsPage";
 import Reminders from "./pages/Reminders";
 import Today from "./pages/todo/Today";
 import Upcoming from "./pages/todo/Upcoming";
@@ -49,6 +50,7 @@ const AppRoutes = () => {
           <Route path="/calendar" element={<NotesCalendar />} />
           <Route path="/clip" element={<WebClipper />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/settings/sync" element={<SyncSettingsPage />} />
           <Route path="/reminders" element={<Reminders />} />
           <Route path="/todo/today" element={<Today />} />
           <Route path="/todo/upcoming" element={<Upcoming />} />
