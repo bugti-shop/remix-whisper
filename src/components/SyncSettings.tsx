@@ -272,13 +272,15 @@ const SyncSettings = () => {
     setIsLoading(prev => ({ ...prev, [`save_${service}`]: false }));
   };
 
-  const renderConnectionDot = (status: ConnectionStatus) => {
+  const renderConnectionStatus = (status: ConnectionStatus) => {
     return (
-      <div 
-        className={`w-2.5 h-2.5 rounded-full ${
-          status.connected ? 'bg-green-500' : 'bg-red-500'
-        }`} 
-      />
+      <span 
+        className={`text-xs font-medium ${
+          status.connected ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'
+        }`}
+      >
+        {status.connected ? 'Connected' : 'Not Connected'}
+      </span>
     );
   };
 
@@ -356,7 +358,7 @@ const SyncSettings = () => {
                   <div className="flex items-center gap-3">
                     <img src={logoClickUp} alt="ClickUp" className="w-8 h-8 rounded-lg" />
                     <span>ClickUp</span>
-                    {renderConnectionDot(settings.integrations.clickup)}
+                    {renderConnectionStatus(settings.integrations.clickup)}
                   </div>
                 </div>
               </AccordionTrigger>
@@ -409,7 +411,7 @@ const SyncSettings = () => {
                   <div className="flex items-center gap-3">
                     <img src={logoNotion} alt="Notion" className="w-8 h-8 rounded-lg" />
                     <span>Notion</span>
-                    {renderConnectionDot(settings.integrations.notion)}
+                    {renderConnectionStatus(settings.integrations.notion)}
                   </div>
                 </div>
               </AccordionTrigger>
@@ -462,7 +464,7 @@ const SyncSettings = () => {
                   <div className="flex items-center gap-3">
                     <img src={logoHubSpot} alt="HubSpot" className="w-8 h-8 rounded-lg" />
                     <span>HubSpot</span>
-                    {renderConnectionDot(settings.integrations.hubspot)}
+                    {renderConnectionStatus(settings.integrations.hubspot)}
                   </div>
                 </div>
               </AccordionTrigger>
@@ -528,7 +530,7 @@ const SyncSettings = () => {
                   <div className="flex items-center gap-3">
                     <img src={logoTickTick} alt="TickTick" className="w-8 h-8 rounded-lg" />
                     <span>TickTick</span>
-                    {renderConnectionDot(settings.imports.ticktick)}
+                    {renderConnectionStatus(settings.imports.ticktick)}
                   </div>
                 </div>
               </AccordionTrigger>
@@ -581,7 +583,7 @@ const SyncSettings = () => {
                   <div className="flex items-center gap-3">
                     <img src={logoTodoist} alt="Todoist" className="w-8 h-8 rounded-lg" />
                     <span>Todoist</span>
-                    {renderConnectionDot(settings.imports.todoist)}
+                    {renderConnectionStatus(settings.imports.todoist)}
                   </div>
                 </div>
               </AccordionTrigger>
