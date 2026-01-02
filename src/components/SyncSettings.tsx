@@ -32,6 +32,7 @@ import logoNotion from "@/assets/logo-notion.png";
 import logoHubSpot from "@/assets/logo-hubspot.png";
 import logoTickTick from "@/assets/logo-ticktick.png";
 import logoTodoist from "@/assets/logo-todoist.png";
+import logoEvernote from "@/assets/logo-evernote.png";
 
 interface ConnectionStatus {
   connected: boolean;
@@ -333,16 +334,9 @@ const SyncSettings = () => {
       {/* Integrations Section */}
       <Card>
         <CardHeader>
-          <div className="w-full space-y-3">
-            <div>
-              <CardTitle className="text-lg">Integrations</CardTitle>
-              <CardDescription>Connect with ClickUp, Notion, and HubSpot</CardDescription>
-            </div>
-            <div className="bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
-              <p className="text-sm text-amber-700 dark:text-amber-300 font-medium">
-                Sync Features Coming Soon
-              </p>
-            </div>
+          <div>
+            <CardTitle className="text-lg">Integrations</CardTitle>
+            <CardDescription>Connect with ClickUp, Notion, and HubSpot</CardDescription>
           </div>
         </CardHeader>
         <CardContent>
@@ -353,7 +347,7 @@ const SyncSettings = () => {
                 <div className="flex items-center justify-between w-full pr-4">
                   <div className="flex items-center gap-3">
                     <img src={logoClickUp} alt="ClickUp" className="w-8 h-8 rounded-lg" />
-                    <span>ClickUp</span>
+                    <span>Continue with ClickUp</span>
                   </div>
                 </div>
               </AccordionTrigger>
@@ -405,7 +399,7 @@ const SyncSettings = () => {
                 <div className="flex items-center justify-between w-full pr-4">
                   <div className="flex items-center gap-3">
                     <img src={logoNotion} alt="Notion" className="w-8 h-8 rounded-lg" />
-                    <span>Notion</span>
+                    <span>Continue with Notion</span>
                   </div>
                 </div>
               </AccordionTrigger>
@@ -457,7 +451,7 @@ const SyncSettings = () => {
                 <div className="flex items-center justify-between w-full pr-4">
                   <div className="flex items-center gap-3">
                     <img src={logoHubSpot} alt="HubSpot" className="w-8 h-8 rounded-lg" />
-                    <span>HubSpot</span>
+                    <span>Continue with HubSpot</span>
                   </div>
                 </div>
               </AccordionTrigger>
@@ -506,7 +500,7 @@ const SyncSettings = () => {
         </CardContent>
       </Card>
 
-      {/* Task Import Section - Only TickTick and Todoist */}
+      {/* Task Import Section */}
       <Card>
         <CardHeader>
           <div>
@@ -522,7 +516,7 @@ const SyncSettings = () => {
                 <div className="flex items-center justify-between w-full pr-4">
                   <div className="flex items-center gap-3">
                     <img src={logoTickTick} alt="TickTick" className="w-8 h-8 rounded-lg" />
-                    <span>TickTick</span>
+                    <span>Import from TickTick</span>
                   </div>
                 </div>
               </AccordionTrigger>
@@ -574,7 +568,7 @@ const SyncSettings = () => {
                 <div className="flex items-center justify-between w-full pr-4">
                   <div className="flex items-center gap-3">
                     <img src={logoTodoist} alt="Todoist" className="w-8 h-8 rounded-lg" />
-                    <span>Todoist</span>
+                    <span>Import from Todoist</span>
                   </div>
                 </div>
               </AccordionTrigger>
@@ -627,6 +621,44 @@ const SyncSettings = () => {
                   )}
                   Import Tasks
                 </Button>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* Evernote */}
+            <AccordionItem value="evernote">
+              <AccordionTrigger className="hover:no-underline">
+                <div className="flex items-center justify-between w-full pr-4">
+                  <div className="flex items-center gap-3">
+                    <img src={logoEvernote} alt="Evernote" className="w-8 h-8 rounded-lg" />
+                    <span>Import from Evernote</span>
+                  </div>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="space-y-4 pt-4">
+                <p className="text-sm text-muted-foreground">
+                  Export your notes from Evernote as .enex files and import them here.
+                </p>
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => {
+                    toast({
+                      title: "Coming Soon",
+                      description: "Evernote import will be available soon.",
+                    });
+                  }}
+                >
+                  <Import className="h-4 w-4 mr-2" />
+                  Import from Evernote
+                </Button>
+                <a 
+                  href="https://help.evernote.com/hc/en-us/articles/209005557-Export-notes-and-notebooks-as-ENEX-or-HTML" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1"
+                >
+                  How to export from Evernote <ExternalLink className="h-3 w-3" />
+                </a>
               </AccordionContent>
             </AccordionItem>
           </Accordion>
