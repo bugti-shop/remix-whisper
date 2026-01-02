@@ -27,7 +27,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { getSuggestedFolders } from '@/utils/personalization';
-import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -445,11 +445,7 @@ const Index = () => {
                 size="icon"
                 variant="ghost"
                 onClick={async () => {
-                  try {
-                    await Haptics.impact({ style: ImpactStyle.Light });
-                  } catch (error) {
-                    console.log('Haptics not available');
-                  }
+                  await triggerHaptic('light');
                   navigate('/todo/today');
                 }}
                 className="h-7 w-7 xs:h-8 xs:w-8 sm:h-9 sm:w-9 hover:bg-transparent active:bg-transparent touch-target"
@@ -822,43 +818,44 @@ const Index = () => {
             <Button
               className="fixed bottom-20 left-4 right-4 z-50 h-12 text-base font-semibold"
               size="lg"
+              onClick={() => triggerHaptic('medium')}
             >
               <Plus className="h-5 w-5" />
               New Note
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="center" className="mb-2 w-48">
-            <DropdownMenuItem onClick={() => handleCreateNote('sticky')} className="gap-2">
+            <DropdownMenuItem onClick={() => { triggerHaptic('light'); handleCreateNote('sticky'); }} className="gap-2">
               <StickyNote className="h-4 w-4 text-amber-500" />
               Sticky Note
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => handleCreateNote('lined')} className="gap-2">
+            <DropdownMenuItem onClick={() => { triggerHaptic('light'); handleCreateNote('lined'); }} className="gap-2">
               <FileText className="h-4 w-4 text-blue-500" />
               Lined Note
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => handleCreateNote('regular')} className="gap-2">
+            <DropdownMenuItem onClick={() => { triggerHaptic('light'); handleCreateNote('regular'); }} className="gap-2">
               <FileEdit className="h-4 w-4 text-emerald-500" />
               Regular Note
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => handleCreateNote('sketch')} className="gap-2">
+            <DropdownMenuItem onClick={() => { triggerHaptic('light'); handleCreateNote('sketch'); }} className="gap-2">
               <Pen className="h-4 w-4 text-purple-500" />
               Sketch Note
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => handleCreateNote('code')} className="gap-2">
+            <DropdownMenuItem onClick={() => { triggerHaptic('light'); handleCreateNote('code'); }} className="gap-2">
               <FileCode className="h-4 w-4 text-orange-500" />
               Code Note
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => handleCreateNote('mindmap')} className="gap-2">
+            <DropdownMenuItem onClick={() => { triggerHaptic('light'); handleCreateNote('mindmap'); }} className="gap-2">
               <GitBranch className="h-4 w-4 text-pink-500" />
               Mind Map
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => handleCreateNote('expense')} className="gap-2">
+            <DropdownMenuItem onClick={() => { triggerHaptic('light'); handleCreateNote('expense'); }} className="gap-2">
               <Receipt className="h-4 w-4 text-teal-500" />
               Expense Tracker
             </DropdownMenuItem>
