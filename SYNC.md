@@ -4924,6 +4924,698 @@ android/app/src/main/java/nota/npd/com/
 
 ---
 
+## 19. Capacitor Native Bridge Plugin
+
+The SyncBridge plugin connects the React SyncSettings UI with Android Java sync/import managers.
+
+### 19.1 Plugin Structure
+
+```
+src/
+├── plugins/
+│   └── SyncBridgePlugin.ts      # TypeScript plugin definition + web fallback
+├── hooks/
+│   └── useSyncBridge.ts         # React hook for using the plugin
+
+android/
+├── app/
+│   └── src/
+│       └── main/
+│           └── java/
+│               └── nota/
+│                   └── npd/
+│                       └── com/
+│                           └── plugins/
+│                               └── SyncBridgePlugin.java
+```
+
+### 19.2 Android Native Implementation
+
+**Location:** `android/app/src/main/java/nota/npd/com/plugins/SyncBridgePlugin.java`
+
+```java
+package nota.npd.com.plugins;
+
+import android.util.Log;
+
+import com.getcapacitor.JSObject;
+import com.getcapacitor.Plugin;
+import com.getcapacitor.PluginCall;
+import com.getcapacitor.PluginMethod;
+import com.getcapacitor.annotation.CapacitorPlugin;
+
+import nota.npd.com.sync.CloudSyncManager;
+import nota.npd.com.calendar.CalendarSyncManager;
+import nota.npd.com.integrations.ClickUpIntegration;
+import nota.npd.com.integrations.NotionIntegration;
+import nota.npd.com.integrations.HubSpotIntegration;
+import nota.npd.com.imports.TickTickImportManager;
+import nota.npd.com.imports.TodoistImportManager;
+import nota.npd.com.imports.GoogleTasksImportManager;
+import nota.npd.com.imports.MicrosoftTodoImportManager;
+import nota.npd.com.imports.AnyDoImportManager;
+import nota.npd.com.imports.ImportedTask;
+
+import java.util.List;
+
+@CapacitorPlugin(name = "SyncBridge")
+public class SyncBridgePlugin extends Plugin {
+
+    private static final String TAG = "SyncBridgePlugin";
+    
+    private CloudSyncManager cloudSyncManager;
+    private CalendarSyncManager calendarSyncManager;
+    private ClickUpIntegration clickUpIntegration;
+    private NotionIntegration notionIntegration;
+    private HubSpotIntegration hubSpotIntegration;
+    private TickTickImportManager tickTickImportManager;
+    private TodoistImportManager todoistImportManager;
+    private GoogleTasksImportManager googleTasksImportManager;
+    private MicrosoftTodoImportManager microsoftTodoImportManager;
+    private AnyDoImportManager anyDoImportManager;
+
+    @Override
+    public void load() {
+        cloudSyncManager = CloudSyncManager.getInstance(getContext());
+        calendarSyncManager = CalendarSyncManager.getInstance(getContext());
+        clickUpIntegration = ClickUpIntegration.getInstance(getContext());
+        notionIntegration = NotionIntegration.getInstance(getContext());
+        hubSpotIntegration = HubSpotIntegration.getInstance(getContext());
+        tickTickImportManager = TickTickImportManager.getInstance(getContext());
+        todoistImportManager = TodoistImportManager.getInstance(getContext());
+        googleTasksImportManager = GoogleTasksImportManager.getInstance(getContext());
+        microsoftTodoImportManager = MicrosoftTodoImportManager.getInstance(getContext());
+        anyDoImportManager = AnyDoImportManager.getInstance(getContext());
+    }
+
+    // ============= Cloud Sync Methods =============
+
+    @PluginMethod
+    public void isCloudSyncEnabled(PluginCall call) {
+        JSObject ret = new JSObject();
+        ret.put("enabled", cloudSyncManager.isSyncEnabled());
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void setCloudSyncEnabled(PluginCall call) {
+        Boolean enabled = call.getBoolean("enabled", false);
+        cloudSyncManager.setSyncEnabled(enabled);
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void getCloudSyncSettings(PluginCall call) {
+        JSObject ret = new JSObject();
+        ret.put("enabled", cloudSyncManager.isSyncEnabled());
+        ret.put("autoSync", cloudSyncManager.isAutoSyncEnabled());
+        ret.put("syncInterval", cloudSyncManager.getSyncInterval());
+        ret.put("wifiOnly", cloudSyncManager.isWifiOnlyEnabled());
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void setCloudSyncSettings(PluginCall call) {
+        Boolean enabled = call.getBoolean("enabled", false);
+        Boolean autoSync = call.getBoolean("autoSync", true);
+        Integer syncInterval = call.getInt("syncInterval", 15);
+        Boolean wifiOnly = call.getBoolean("wifiOnly", false);
+        
+        cloudSyncManager.setSyncEnabled(enabled);
+        cloudSyncManager.setAutoSyncEnabled(autoSync);
+        cloudSyncManager.setSyncInterval(syncInterval);
+        cloudSyncManager.setWifiOnlyEnabled(wifiOnly);
+        
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void syncNow(PluginCall call) {
+        cloudSyncManager.syncAllData(new CloudSyncManager.SyncListener() {
+            @Override
+            public void onSyncStarted() {
+                Log.d(TAG, "Sync started");
+            }
+
+            @Override
+            public void onSyncProgress(int current, int total) {
+                Log.d(TAG, "Sync progress: " + current + "/" + total);
+            }
+
+            @Override
+            public void onSyncCompleted(boolean success, String message) {
+                JSObject ret = new JSObject();
+                ret.put("success", success);
+                ret.put("message", message);
+                call.resolve(ret);
+            }
+
+            @Override
+            public void onConflictDetected(CloudSyncManager.SyncConflict conflict) {
+                Log.w(TAG, "Conflict detected: " + conflict.toString());
+            }
+        });
+    }
+
+    @PluginMethod
+    public void getLastSyncTime(PluginCall call) {
+        JSObject ret = new JSObject();
+        String lastSync = cloudSyncManager.getLastSyncTimeFormatted();
+        ret.put("timestamp", lastSync);
+        call.resolve(ret);
+    }
+
+    // ============= Authentication Methods =============
+
+    @PluginMethod
+    public void isAuthenticated(PluginCall call) {
+        JSObject ret = new JSObject();
+        ret.put("authenticated", cloudSyncManager.isAuthenticated());
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void signInWithGoogle(PluginCall call) {
+        cloudSyncManager.signInWithGoogle(getActivity(), new CloudSyncManager.AuthCallback() {
+            @Override
+            public void onSuccess(String email) {
+                JSObject ret = new JSObject();
+                ret.put("success", true);
+                ret.put("email", email);
+                call.resolve(ret);
+            }
+
+            @Override
+            public void onError(String error) {
+                JSObject ret = new JSObject();
+                ret.put("success", false);
+                ret.put("error", error);
+                call.resolve(ret);
+            }
+        });
+    }
+
+    @PluginMethod
+    public void signOut(PluginCall call) {
+        cloudSyncManager.signOut();
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void getCurrentUser(PluginCall call) {
+        JSObject ret = new JSObject();
+        ret.put("email", cloudSyncManager.getCurrentUserEmail());
+        ret.put("uid", cloudSyncManager.getCurrentUserId());
+        call.resolve(ret);
+    }
+
+    // ============= Google Calendar Methods =============
+
+    @PluginMethod
+    public void isCalendarSyncEnabled(PluginCall call) {
+        JSObject ret = new JSObject();
+        ret.put("enabled", calendarSyncManager.isEnabled());
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void setCalendarSyncEnabled(PluginCall call) {
+        Boolean enabled = call.getBoolean("enabled", false);
+        calendarSyncManager.setEnabled(enabled);
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void getCalendarSettings(PluginCall call) {
+        JSObject ret = new JSObject();
+        ret.put("enabled", calendarSyncManager.isEnabled());
+        ret.put("twoWaySync", calendarSyncManager.isTwoWaySyncEnabled());
+        ret.put("defaultCalendar", calendarSyncManager.getDefaultCalendarId());
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void setCalendarSettings(PluginCall call) {
+        Boolean enabled = call.getBoolean("enabled", false);
+        Boolean twoWaySync = call.getBoolean("twoWaySync", true);
+        String defaultCalendar = call.getString("defaultCalendar", "");
+        
+        calendarSyncManager.setEnabled(enabled);
+        calendarSyncManager.setTwoWaySyncEnabled(twoWaySync);
+        calendarSyncManager.setDefaultCalendarId(defaultCalendar);
+        
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void connectGoogleCalendar(PluginCall call) {
+        calendarSyncManager.connectGoogleAccount(getActivity(), new CalendarSyncManager.ConnectionCallback() {
+            @Override
+            public void onSuccess(String email) {
+                JSObject ret = new JSObject();
+                ret.put("success", true);
+                ret.put("email", email);
+                call.resolve(ret);
+            }
+
+            @Override
+            public void onError(String error) {
+                JSObject ret = new JSObject();
+                ret.put("success", false);
+                ret.put("error", error);
+                call.resolve(ret);
+            }
+        });
+    }
+
+    @PluginMethod
+    public void disconnectGoogleCalendar(PluginCall call) {
+        calendarSyncManager.disconnect();
+        call.resolve();
+    }
+
+    // ============= ClickUp Integration =============
+
+    @PluginMethod
+    public void saveClickUpToken(PluginCall call) {
+        String token = call.getString("token", "");
+        boolean success = clickUpIntegration.saveApiToken(token);
+        
+        JSObject ret = new JSObject();
+        ret.put("success", success);
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void getClickUpConnectionStatus(PluginCall call) {
+        JSObject ret = new JSObject();
+        ret.put("connected", clickUpIntegration.isConnected());
+        ret.put("lastSync", clickUpIntegration.getLastSyncTime());
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void disconnectClickUp(PluginCall call) {
+        clickUpIntegration.disconnect();
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void syncClickUp(PluginCall call) {
+        clickUpIntegration.syncTasks(new ClickUpIntegration.SyncCallback() {
+            @Override
+            public void onComplete(boolean success, String message, int itemsSynced) {
+                JSObject ret = new JSObject();
+                ret.put("success", success);
+                ret.put("message", message);
+                ret.put("itemsSynced", itemsSynced);
+                call.resolve(ret);
+            }
+        });
+    }
+
+    // ============= Notion Integration =============
+
+    @PluginMethod
+    public void saveNotionToken(PluginCall call) {
+        String token = call.getString("token", "");
+        boolean success = notionIntegration.saveApiToken(token);
+        
+        JSObject ret = new JSObject();
+        ret.put("success", success);
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void getNotionConnectionStatus(PluginCall call) {
+        JSObject ret = new JSObject();
+        ret.put("connected", notionIntegration.isConnected());
+        ret.put("lastSync", notionIntegration.getLastSyncTime());
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void disconnectNotion(PluginCall call) {
+        notionIntegration.disconnect();
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void syncNotion(PluginCall call) {
+        notionIntegration.syncNotes(new NotionIntegration.SyncCallback() {
+            @Override
+            public void onComplete(boolean success, String message, int itemsSynced) {
+                JSObject ret = new JSObject();
+                ret.put("success", success);
+                ret.put("message", message);
+                ret.put("itemsSynced", itemsSynced);
+                call.resolve(ret);
+            }
+        });
+    }
+
+    // ============= HubSpot Integration =============
+
+    @PluginMethod
+    public void saveHubSpotToken(PluginCall call) {
+        String token = call.getString("token", "");
+        boolean success = hubSpotIntegration.saveApiToken(token);
+        
+        JSObject ret = new JSObject();
+        ret.put("success", success);
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void getHubSpotConnectionStatus(PluginCall call) {
+        JSObject ret = new JSObject();
+        ret.put("connected", hubSpotIntegration.isConnected());
+        ret.put("lastSync", hubSpotIntegration.getLastSyncTime());
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void disconnectHubSpot(PluginCall call) {
+        hubSpotIntegration.disconnect();
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void syncHubSpot(PluginCall call) {
+        hubSpotIntegration.syncContacts(new HubSpotIntegration.SyncCallback() {
+            @Override
+            public void onComplete(boolean success, String message, int itemsSynced) {
+                JSObject ret = new JSObject();
+                ret.put("success", success);
+                ret.put("message", message);
+                ret.put("itemsSynced", itemsSynced);
+                call.resolve(ret);
+            }
+        });
+    }
+
+    // ============= TickTick Import =============
+
+    @PluginMethod
+    public void connectTickTick(PluginCall call) {
+        tickTickImportManager.connectWithOAuth(getActivity(), new TickTickImportManager.ConnectionCallback() {
+            @Override
+            public void onSuccess(String email) {
+                JSObject ret = new JSObject();
+                ret.put("success", true);
+                ret.put("email", email);
+                call.resolve(ret);
+            }
+
+            @Override
+            public void onError(String error) {
+                JSObject ret = new JSObject();
+                ret.put("success", false);
+                ret.put("error", error);
+                call.resolve(ret);
+            }
+        });
+    }
+
+    @PluginMethod
+    public void disconnectTickTick(PluginCall call) {
+        tickTickImportManager.disconnect();
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void getTickTickConnectionStatus(PluginCall call) {
+        JSObject ret = new JSObject();
+        ret.put("connected", tickTickImportManager.isConnected());
+        ret.put("lastSync", tickTickImportManager.getLastImportTime());
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void importFromTickTick(PluginCall call) {
+        tickTickImportManager.importTasks(new TickTickImportManager.ImportCallback() {
+            @Override
+            public void onComplete(boolean success, String message, List<ImportedTask> tasks) {
+                JSObject ret = new JSObject();
+                ret.put("success", success);
+                ret.put("message", message);
+                ret.put("totalImported", tasks != null ? tasks.size() : 0);
+                // Convert tasks to JSArray if needed
+                call.resolve(ret);
+            }
+        });
+    }
+
+    // ============= Todoist Import =============
+
+    @PluginMethod
+    public void saveTodoistToken(PluginCall call) {
+        String token = call.getString("token", "");
+        boolean success = todoistImportManager.saveApiToken(token);
+        
+        JSObject ret = new JSObject();
+        ret.put("success", success);
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void disconnectTodoist(PluginCall call) {
+        todoistImportManager.disconnect();
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void getTodoistConnectionStatus(PluginCall call) {
+        JSObject ret = new JSObject();
+        ret.put("connected", todoistImportManager.isConnected());
+        ret.put("lastSync", todoistImportManager.getLastImportTime());
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void importFromTodoist(PluginCall call) {
+        todoistImportManager.importTasks(new TodoistImportManager.ImportCallback() {
+            @Override
+            public void onComplete(boolean success, String message, List<ImportedTask> tasks) {
+                JSObject ret = new JSObject();
+                ret.put("success", success);
+                ret.put("message", message);
+                ret.put("totalImported", tasks != null ? tasks.size() : 0);
+                call.resolve(ret);
+            }
+        });
+    }
+
+    // ============= Google Tasks Import =============
+
+    @PluginMethod
+    public void connectGoogleTasks(PluginCall call) {
+        googleTasksImportManager.connectWithGoogle(getActivity(), new GoogleTasksImportManager.ConnectionCallback() {
+            @Override
+            public void onSuccess(String email) {
+                JSObject ret = new JSObject();
+                ret.put("success", true);
+                ret.put("email", email);
+                call.resolve(ret);
+            }
+
+            @Override
+            public void onError(String error) {
+                JSObject ret = new JSObject();
+                ret.put("success", false);
+                ret.put("error", error);
+                call.resolve(ret);
+            }
+        });
+    }
+
+    @PluginMethod
+    public void disconnectGoogleTasks(PluginCall call) {
+        googleTasksImportManager.disconnect();
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void getGoogleTasksConnectionStatus(PluginCall call) {
+        JSObject ret = new JSObject();
+        ret.put("connected", googleTasksImportManager.isConnected());
+        ret.put("lastSync", googleTasksImportManager.getLastImportTime());
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void importFromGoogleTasks(PluginCall call) {
+        googleTasksImportManager.importTasks(new GoogleTasksImportManager.ImportCallback() {
+            @Override
+            public void onComplete(boolean success, String message, List<ImportedTask> tasks) {
+                JSObject ret = new JSObject();
+                ret.put("success", success);
+                ret.put("message", message);
+                ret.put("totalImported", tasks != null ? tasks.size() : 0);
+                call.resolve(ret);
+            }
+        });
+    }
+
+    // ============= Microsoft To Do Import =============
+
+    @PluginMethod
+    public void connectMicrosoftTodo(PluginCall call) {
+        microsoftTodoImportManager.connectWithMicrosoft(getActivity(), new MicrosoftTodoImportManager.ConnectionCallback() {
+            @Override
+            public void onSuccess(String email) {
+                JSObject ret = new JSObject();
+                ret.put("success", true);
+                ret.put("email", email);
+                call.resolve(ret);
+            }
+
+            @Override
+            public void onError(String error) {
+                JSObject ret = new JSObject();
+                ret.put("success", false);
+                ret.put("error", error);
+                call.resolve(ret);
+            }
+        });
+    }
+
+    @PluginMethod
+    public void disconnectMicrosoftTodo(PluginCall call) {
+        microsoftTodoImportManager.disconnect();
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void getMicrosoftTodoConnectionStatus(PluginCall call) {
+        JSObject ret = new JSObject();
+        ret.put("connected", microsoftTodoImportManager.isConnected());
+        ret.put("lastSync", microsoftTodoImportManager.getLastImportTime());
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void importFromMicrosoftTodo(PluginCall call) {
+        microsoftTodoImportManager.importTasks(new MicrosoftTodoImportManager.ImportCallback() {
+            @Override
+            public void onComplete(boolean success, String message, List<ImportedTask> tasks) {
+                JSObject ret = new JSObject();
+                ret.put("success", success);
+                ret.put("message", message);
+                ret.put("totalImported", tasks != null ? tasks.size() : 0);
+                call.resolve(ret);
+            }
+        });
+    }
+
+    // ============= Any.do Import =============
+
+    @PluginMethod
+    public void importFromAnyDoFile(PluginCall call) {
+        String fileUri = call.getString("fileUri", "");
+        
+        anyDoImportManager.importFromFile(fileUri, new AnyDoImportManager.ImportCallback() {
+            @Override
+            public void onComplete(boolean success, String message, List<ImportedTask> tasks) {
+                JSObject ret = new JSObject();
+                ret.put("success", success);
+                ret.put("message", message);
+                ret.put("totalImported", tasks != null ? tasks.size() : 0);
+                call.resolve(ret);
+            }
+        });
+    }
+
+    // ============= Utilities =============
+
+    @PluginMethod
+    public void isNativeAvailable(PluginCall call) {
+        JSObject ret = new JSObject();
+        ret.put("available", true);
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void getNetworkStatus(PluginCall call) {
+        JSObject ret = new JSObject();
+        ret.put("connected", cloudSyncManager.isNetworkAvailable());
+        ret.put("type", cloudSyncManager.getNetworkType());
+        call.resolve(ret);
+    }
+}
+```
+
+### 19.3 Register Plugin in MainActivity
+
+**Location:** `android/app/src/main/java/nota/npd/com/MainActivity.java`
+
+```java
+package nota.npd.com;
+
+import android.os.Bundle;
+import com.getcapacitor.BridgeActivity;
+import nota.npd.com.plugins.SyncBridgePlugin;
+
+public class MainActivity extends BridgeActivity {
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        // Register custom plugins before calling super.onCreate()
+        registerPlugin(SyncBridgePlugin.class);
+        
+        super.onCreate(savedInstanceState);
+    }
+}
+```
+
+### 19.4 React Usage Example
+
+```tsx
+import { useSyncBridge } from '@/hooks/useSyncBridge';
+
+function SyncSettingsPage() {
+  const {
+    isNative,
+    cloudSyncSettings,
+    connections,
+    updateCloudSyncSettings,
+    saveApiToken,
+    importTasks,
+    syncNow,
+  } = useSyncBridge();
+
+  // Toggle cloud sync
+  const handleToggleSync = async () => {
+    await updateCloudSyncSettings({ 
+      enabled: !cloudSyncSettings.enabled 
+    });
+  };
+
+  // Save ClickUp API token
+  const handleSaveClickUp = async (token: string) => {
+    const result = await saveApiToken('clickup', token);
+    if (result.success) {
+      console.log('ClickUp connected!');
+    }
+  };
+
+  // Import from Todoist
+  const handleImportTodoist = async () => {
+    const result = await importTasks('todoist');
+    console.log(`Imported ${result.totalImported} tasks`);
+  };
+
+  return (
+    <div>
+      <p>Running on native: {isNative ? 'Yes' : 'No'}</p>
+      <p>ClickUp connected: {connections.clickup.connected ? 'Yes' : 'No'}</p>
+      {/* ... rest of UI */}
+    </div>
+  );
+}
+```
+
+---
+
 **Package Name:** `nota.npd.com`
 
 **Last Updated:** January 2026
