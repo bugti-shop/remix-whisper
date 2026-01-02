@@ -7,8 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { WelcomeProvider, useWelcome } from "@/contexts/WelcomeContext";
 import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
-import { RevenueCatProvider, useRevenueCat } from "@/contexts/RevenueCatContext";
-import { SubscriptionGuard } from "@/components/SubscriptionGuard";
+import { RevenueCatProvider } from "@/contexts/RevenueCatContext";
 import OnboardingFlow from "@/components/OnboardingFlow";
 import Index from "./pages/Index";
 import Notes from "./pages/Notes";
@@ -66,46 +65,7 @@ const AppRoutes = () => {
 };
 
 const AppContent = () => {
-  const { hasSeenWelcome, completeWelcome, resetWelcome } = useWelcome();
-  const { isPro, isInitialized, presentPaywallIfNeeded, checkEntitlement } = useRevenueCat();
-
-  // Check subscription status and redirect to paywall if expired
-  useEffect(() => {
-    const checkSubscriptionStatus = async () => {
-      // Only check on native platforms
-      if (!Capacitor.isNativePlatform()) {
-        return;
-      }
-
-      // Wait for RevenueCat to initialize
-      if (!isInitialized) {
-        return;
-      }
-
-      // Check if user has active subscription
-      const hasActiveSubscription = await checkEntitlement();
-
-      if (!hasActiveSubscription) {
-        // Subscription expired or cancelled - clear local access
-        localStorage.removeItem('npd_pro_access');
-        localStorage.removeItem('npd_trial_start');
-        
-        console.log('Subscription expired, redirecting to paywall');
-        
-        // Reset to onboarding/paywall
-        resetWelcome();
-        
-        // Present paywall
-        await presentPaywallIfNeeded();
-      }
-    };
-
-    checkSubscriptionStatus();
-    
-    // Check every 5 minutes
-    const interval = setInterval(checkSubscriptionStatus, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, [isInitialized, checkEntitlement, presentPaywallIfNeeded, resetWelcome]);
+  const { hasSeenWelcome, completeWelcome } = useWelcome();
 
   useEffect(() => {
     notificationManager.initialize().catch(console.error);
@@ -116,11 +76,11 @@ const AppContent = () => {
   }
 
   return (
-    <SubscriptionGuard onSubscriptionExpired={resetWelcome}>
+    <>
       <Toaster />
       <Sonner />
       <AppRoutes />
-    </SubscriptionGuard>
+    </>
   );
 };
 
