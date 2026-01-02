@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Cloud, 
   Calendar, 
@@ -11,7 +11,9 @@ import {
   RefreshCw,
   ExternalLink,
   FileJson,
-  ChevronRight
+  ChevronRight,
+  Smartphone,
+  Loader2
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -27,6 +29,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { useSyncBridge } from "@/hooks/useSyncBridge";
 
 interface ConnectionStatus {
   connected: boolean;
@@ -71,6 +74,25 @@ const SyncSettings = () => {
   const [showApiKey, setShowApiKey] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState<Record<string, boolean>>({});
   
+  // Use the native bridge hook
+  const {
+    isNative,
+    isLoading: bridgeLoading,
+    cloudSyncSettings,
+    calendarSettings,
+    connections,
+    lastSyncTime,
+    updateCloudSyncSettings,
+    updateCalendarSettings,
+    connectGoogleCalendar,
+    saveApiToken,
+    disconnectService,
+    connectOAuthService,
+    importTasks,
+    syncNow,
+    syncIntegration,
+  } = useSyncBridge();
+  
   const [settings, setSettings] = useState<SyncSettingsState>({
     cloudSync: {
       enabled: false,
@@ -103,6 +125,28 @@ const SyncSettings = () => {
     },
   });
 
+  // Sync state with native bridge
+  useEffect(() => {
+    if (!bridgeLoading) {
+      setSettings(prev => ({
+        ...prev,
+        cloudSync: cloudSyncSettings,
+        calendar: calendarSettings,
+        integrations: {
+          clickup: connections.clickup,
+          notion: connections.notion,
+          hubspot: connections.hubspot,
+        },
+        imports: {
+          ticktick: connections.ticktick,
+          todoist: connections.todoist,
+          googleTasks: connections.googleTasks,
+          microsoftTodo: connections.microsoftTodo,
+        },
+      }));
+    }
+  }, [bridgeLoading, cloudSyncSettings, calendarSettings, connections]);
+
   const toggleApiKeyVisibility = (key: string) => {
     setShowApiKey(prev => ({ ...prev, [key]: !prev[key] }));
   };
@@ -110,47 +154,109 @@ const SyncSettings = () => {
   const handleConnect = async (service: string) => {
     setIsLoading(prev => ({ ...prev, [service]: true }));
     
-    // Simulate connection
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+      if (service === "Google Calendar") {
+        const result = await connectGoogleCalendar();
+        if (result.success) {
+          toast({
+            title: "Connected",
+            description: `Google Calendar connected: ${result.email}`,
+          });
+        } else {
+          toast({
+            title: "Connection failed",
+            description: result.error || "Failed to connect",
+            variant: "destructive",
+          });
+        }
+      } else if (['ticktick', 'googleTasks', 'microsoftTodo'].includes(service.toLowerCase())) {
+        const result = await connectOAuthService(service.toLowerCase() as 'ticktick' | 'googleTasks' | 'microsoftTodo');
+        if (result.success) {
+          toast({
+            title: "Connected",
+            description: `${service} connected successfully`,
+          });
+        } else {
+          toast({
+            title: "Connection failed",
+            description: result.error || "Failed to connect",
+            variant: "destructive",
+          });
+        }
+      } else {
+        toast({
+          title: "Connection initiated",
+          description: `Opening ${service} authorization...`,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: `Failed to connect to ${service}`,
+        variant: "destructive",
+      });
+    }
     
     setIsLoading(prev => ({ ...prev, [service]: false }));
-    
-    toast({
-      title: "Connection initiated",
-      description: `Opening ${service} authorization...`,
-    });
   };
 
-  const handleDisconnect = (service: string, type: 'integrations' | 'imports') => {
-    setSettings(prev => ({
-      ...prev,
-      [type]: {
-        ...prev[type],
-        [service]: { connected: false },
-      },
-    }));
-    
-    toast({
-      title: "Disconnected",
-      description: `${service} has been disconnected.`,
-    });
+  const handleDisconnect = async (service: string, type: 'integrations' | 'imports') => {
+    try {
+      await disconnectService(service as any);
+      setSettings(prev => ({
+        ...prev,
+        [type]: {
+          ...prev[type],
+          [service]: { connected: false },
+        },
+      }));
+      
+      toast({
+        title: "Disconnected",
+        description: `${service} has been disconnected.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: `Failed to disconnect ${service}`,
+        variant: "destructive",
+      });
+    }
   };
 
   const handleImportTasks = async (service: string) => {
     setIsLoading(prev => ({ ...prev, [`import_${service}`]: true }));
     
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    try {
+      const result = await importTasks(service as 'ticktick' | 'todoist' | 'googleTasks' | 'microsoftTodo');
+      
+      if (result.success) {
+        toast({
+          title: "Import completed",
+          description: `Imported ${result.totalImported} tasks from ${service}`,
+        });
+      } else {
+        toast({
+          title: "Import failed",
+          description: result.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: `Failed to import from ${service}`,
+        variant: "destructive",
+      });
+    }
     
     setIsLoading(prev => ({ ...prev, [`import_${service}`]: false }));
-    
-    toast({
-      title: "Import started",
-      description: `Importing tasks from ${service}...`,
-    });
   };
 
-  const handleSaveApiKey = (service: string) => {
-    if (!settings.apiKeys[service as keyof typeof settings.apiKeys]) {
+  const handleSaveApiKey = async (service: string) => {
+    const apiKey = settings.apiKeys[service.toLowerCase() as keyof typeof settings.apiKeys];
+    
+    if (!apiKey) {
       toast({
         title: "Error",
         description: "Please enter an API key",
@@ -159,10 +265,109 @@ const SyncSettings = () => {
       return;
     }
     
-    toast({
-      title: "API Key saved",
-      description: `${service} API key has been saved securely.`,
-    });
+    setIsLoading(prev => ({ ...prev, [`save_${service}`]: true }));
+    
+    try {
+      const result = await saveApiToken(service.toLowerCase() as 'clickup' | 'notion' | 'hubspot' | 'todoist', apiKey);
+      
+      if (result.success) {
+        toast({
+          title: "API Key saved",
+          description: `${service} API key has been saved securely.`,
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to save API key",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save API key",
+        variant: "destructive",
+      });
+    }
+    
+    setIsLoading(prev => ({ ...prev, [`save_${service}`]: false }));
+  };
+
+  const handleSyncNow = async () => {
+    setIsLoading(prev => ({ ...prev, syncNow: true }));
+    
+    try {
+      const result = await syncNow();
+      
+      if (result.success) {
+        toast({
+          title: "Sync completed",
+          description: result.message,
+        });
+      } else {
+        toast({
+          title: "Sync failed",
+          description: result.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to sync",
+        variant: "destructive",
+      });
+    }
+    
+    setIsLoading(prev => ({ ...prev, syncNow: false }));
+  };
+
+  const handleCloudSyncToggle = async (enabled: boolean) => {
+    await updateCloudSyncSettings({ enabled });
+    setSettings(prev => ({
+      ...prev,
+      cloudSync: { ...prev.cloudSync, enabled }
+    }));
+  };
+
+  const handleAutoSyncToggle = async (autoSync: boolean) => {
+    await updateCloudSyncSettings({ autoSync });
+    setSettings(prev => ({
+      ...prev,
+      cloudSync: { ...prev.cloudSync, autoSync }
+    }));
+  };
+
+  const handleWifiOnlyToggle = async (wifiOnly: boolean) => {
+    await updateCloudSyncSettings({ wifiOnly });
+    setSettings(prev => ({
+      ...prev,
+      cloudSync: { ...prev.cloudSync, wifiOnly }
+    }));
+  };
+
+  const handleSyncIntervalChange = async (syncInterval: number) => {
+    await updateCloudSyncSettings({ syncInterval });
+    setSettings(prev => ({
+      ...prev,
+      cloudSync: { ...prev.cloudSync, syncInterval }
+    }));
+  };
+
+  const handleCalendarToggle = async (enabled: boolean) => {
+    await updateCalendarSettings({ enabled });
+    setSettings(prev => ({
+      ...prev,
+      calendar: { ...prev.calendar, enabled }
+    }));
+  };
+
+  const handleTwoWaySyncToggle = async (twoWaySync: boolean) => {
+    await updateCalendarSettings({ twoWaySync });
+    setSettings(prev => ({
+      ...prev,
+      calendar: { ...prev.calendar, twoWaySync }
+    }));
   };
 
   const renderConnectionBadge = (status: ConnectionStatus) => {
@@ -181,8 +386,36 @@ const SyncSettings = () => {
     );
   };
 
+  if (bridgeLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 p-4 max-w-2xl mx-auto">
+      {/* Native App Banner */}
+      {!isNative && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="flex items-center gap-3 py-4">
+            <Smartphone className="h-5 w-5 text-primary" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">Some features require the native app</p>
+              <p className="text-xs text-muted-foreground">OAuth connections and imports work best on mobile</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Last Sync Time */}
+      {lastSyncTime && (
+        <div className="text-xs text-muted-foreground text-center">
+          Last synced: {new Date(lastSyncTime).toLocaleString()}
+        </div>
+      )}
+
       {/* Cloud Sync Section */}
       <Card>
         <CardHeader>
@@ -205,12 +438,7 @@ const SyncSettings = () => {
             <Switch
               id="cloud-sync"
               checked={settings.cloudSync.enabled}
-              onCheckedChange={(checked) => 
-                setSettings(prev => ({
-                  ...prev,
-                  cloudSync: { ...prev.cloudSync, enabled: checked }
-                }))
-              }
+              onCheckedChange={handleCloudSyncToggle}
             />
           </div>
           
@@ -226,12 +454,7 @@ const SyncSettings = () => {
                   <Switch
                     id="auto-sync"
                     checked={settings.cloudSync.autoSync}
-                    onCheckedChange={(checked) => 
-                      setSettings(prev => ({
-                        ...prev,
-                        cloudSync: { ...prev.cloudSync, autoSync: checked }
-                      }))
-                    }
+                    onCheckedChange={handleAutoSyncToggle}
                   />
                 </div>
                 
@@ -243,12 +466,7 @@ const SyncSettings = () => {
                   <Switch
                     id="wifi-only"
                     checked={settings.cloudSync.wifiOnly}
-                    onCheckedChange={(checked) => 
-                      setSettings(prev => ({
-                        ...prev,
-                        cloudSync: { ...prev.cloudSync, wifiOnly: checked }
-                      }))
-                    }
+                    onCheckedChange={handleWifiOnlyToggle}
                   />
                 </div>
                 
@@ -260,12 +478,7 @@ const SyncSettings = () => {
                         key={interval}
                         variant={settings.cloudSync.syncInterval === interval ? "default" : "outline"}
                         size="sm"
-                        onClick={() => 
-                          setSettings(prev => ({
-                            ...prev,
-                            cloudSync: { ...prev.cloudSync, syncInterval: interval }
-                          }))
-                        }
+                        onClick={() => handleSyncIntervalChange(interval)}
                       >
                         {interval}m
                       </Button>
@@ -273,8 +486,17 @@ const SyncSettings = () => {
                   </div>
                 </div>
                 
-                <Button variant="outline" className="w-full">
-                  <RefreshCw className="h-4 w-4 mr-2" />
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={handleSyncNow}
+                  disabled={isLoading.syncNow}
+                >
+                  {isLoading.syncNow ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                  )}
                   Sync Now
                 </Button>
               </div>
@@ -305,12 +527,7 @@ const SyncSettings = () => {
             <Switch
               id="calendar-sync"
               checked={settings.calendar.enabled}
-              onCheckedChange={(checked) => 
-                setSettings(prev => ({
-                  ...prev,
-                  calendar: { ...prev.calendar, enabled: checked }
-                }))
-              }
+              onCheckedChange={handleCalendarToggle}
             />
           </div>
           
@@ -326,12 +543,7 @@ const SyncSettings = () => {
                   <Switch
                     id="two-way-sync"
                     checked={settings.calendar.twoWaySync}
-                    onCheckedChange={(checked) => 
-                      setSettings(prev => ({
-                        ...prev,
-                        calendar: { ...prev.calendar, twoWaySync: checked }
-                      }))
-                    }
+                    onCheckedChange={handleTwoWaySyncToggle}
                   />
                 </div>
                 
@@ -339,14 +551,24 @@ const SyncSettings = () => {
                   variant="outline" 
                   className="w-full"
                   onClick={() => handleConnect("Google Calendar")}
+                  disabled={isLoading["Google Calendar"]}
                 >
-                  <img 
-                    src="https://www.google.com/favicon.ico" 
-                    alt="Google" 
-                    className="h-4 w-4 mr-2"
-                  />
-                  Connect Google Account
+                  {isLoading["Google Calendar"] ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <img 
+                      src="https://www.google.com/favicon.ico" 
+                      alt="Google" 
+                      className="h-4 w-4 mr-2"
+                    />
+                  )}
+                  {connections.googleCalendar.connected ? 'Connected' : 'Connect Google Account'}
                 </Button>
+                {connections.googleCalendar.email && (
+                  <p className="text-xs text-muted-foreground text-center">
+                    Connected as {connections.googleCalendar.email}
+                  </p>
+                )}
               </div>
             </>
           )}
