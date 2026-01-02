@@ -56,7 +56,7 @@ In the Firebase Console, enable these services:
 1. In Firebase Console, go to **Project Settings** (gear icon)
 2. Scroll to **"Your apps"** section
 3. Click **Android icon** to add Android app
-4. Enter package name: `com.npd.nota`
+4. Enter package name: `nota.npd.com`
 5. Enter app nickname: `NPD Notes`
 6. Enter SHA-1 certificate (see section 2.3)
 7. Click **"Register app"**
@@ -69,7 +69,7 @@ In the Firebase Console, enable these services:
 
 1. In Firebase Console, go to **Project Settings**
 2. Click **iOS icon** to add iOS app
-3. Enter bundle ID: `com.npd.nota`
+3. Enter bundle ID: `nota.npd.com`
 4. Download `GoogleService-Info.plist`
 5. Place file in `ios/App/App/` directory
 
@@ -100,9 +100,9 @@ android/
 │   ├── src/
 │   │   └── main/
 │   │       ├── java/
-│   │       │   └── com/
+│   │       │   └── nota/
 │   │       │       └── npd/
-│   │       │           └── nota/
+│   │       │           └── com/
 │   │       │               ├── MainActivity.java
 │   │       │               ├── sync/
 │   │       │               │   ├── CloudSyncManager.java
@@ -159,11 +159,11 @@ plugins {
 }
 
 android {
-    namespace "com.npd.nota"
+    namespace "nota.npd.com"
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.npd.nota"
+        applicationId "nota.npd.com"
         minSdk 24
         targetSdk 34
         versionCode 1
@@ -235,7 +235,7 @@ Add the SHA-1 to Firebase Console → Project Settings → Your Apps → Android
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.npd.nota">
+    package="nota.npd.com">
 
     <!-- Permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -293,10 +293,10 @@ Add the SHA-1 to Firebase Console → Project Settings → Your Apps → Android
 
 ### 3.1 CloudSyncManager.java
 
-**Location:** `android/app/src/main/java/com/npd/nota/sync/CloudSyncManager.java`
+**Location:** `android/app/src/main/java/nota/npd/com/sync/CloudSyncManager.java`
 
 ```java
-package com.npd.nota.sync;
+package nota.npd.com.sync;
 
 import android.content.Context;
 import android.util.Log;
@@ -786,10 +786,10 @@ public class CloudSyncManager {
 
 ### 3.2 SyncWorker.java (Background Sync)
 
-**Location:** `android/app/src/main/java/com/npd/nota/sync/SyncWorker.java`
+**Location:** `android/app/src/main/java/nota/npd/com/sync/SyncWorker.java`
 
 ```java
-package com.npd.nota.sync;
+package nota.npd.com.sync;
 
 import android.content.Context;
 import android.util.Log;
@@ -921,10 +921,10 @@ public class SyncWorker extends Worker {
 
 ### 3.3 SyncService.java (Foreground Service)
 
-**Location:** `android/app/src/main/java/com/npd/nota/sync/SyncService.java`
+**Location:** `android/app/src/main/java/nota/npd/com/sync/SyncService.java`
 
 ```java
-package com.npd.nota.sync;
+package nota.npd.com.sync;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -1053,10 +1053,10 @@ public class SyncService extends Service {
 
 ### 3.4 BootReceiver.java (Auto-Start Sync)
 
-**Location:** `android/app/src/main/java/com/npd/nota/sync/BootReceiver.java`
+**Location:** `android/app/src/main/java/nota/npd/com/sync/BootReceiver.java`
 
 ```java
-package com.npd.nota.sync;
+package nota.npd.com.sync;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -1097,7 +1097,7 @@ public class BootReceiver extends BroadcastReceiver {
    - Go to **APIs & Services → Credentials**
    - Click **Create Credentials → OAuth client ID**
    - Choose **Android** application type
-   - Enter package name: `com.npd.nota`
+   - Enter package name: `nota.npd.com`
    - Enter SHA-1 certificate fingerprint
    - Click **Create**
 
@@ -1112,10 +1112,10 @@ public class BootReceiver extends BroadcastReceiver {
 
 ### 4.2 GoogleCalendarHelper.java
 
-**Location:** `android/app/src/main/java/com/npd/nota/calendar/GoogleCalendarHelper.java`
+**Location:** `android/app/src/main/java/nota/npd/com/calendar/GoogleCalendarHelper.java`
 
 ```java
-package com.npd.nota.calendar;
+package nota.npd.com.calendar;
 
 import android.content.Context;
 import android.util.Log;
@@ -1434,10 +1434,10 @@ public class GoogleCalendarHelper {
 
 ### 4.3 CalendarSyncManager.java
 
-**Location:** `android/app/src/main/java/com/npd/nota/calendar/CalendarSyncManager.java`
+**Location:** `android/app/src/main/java/nota/npd/com/calendar/CalendarSyncManager.java`
 
 ```java
-package com.npd.nota.calendar;
+package nota.npd.com.calendar;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -1662,10 +1662,10 @@ public class CalendarSyncManager {
 
 ### 5.1 IntegrationManager.java
 
-**Location:** `android/app/src/main/java/com/npd/nota/integrations/IntegrationManager.java`
+**Location:** `android/app/src/main/java/nota/npd/com/integrations/IntegrationManager.java`
 
 ```java
-package com.npd.nota.integrations;
+package nota.npd.com.integrations;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -1795,10 +1795,10 @@ public class IntegrationManager {
 
 ### 5.2 BaseIntegration.java
 
-**Location:** `android/app/src/main/java/com/npd/nota/integrations/BaseIntegration.java`
+**Location:** `android/app/src/main/java/nota/npd/com/integrations/BaseIntegration.java`
 
 ```java
-package com.npd.nota.integrations;
+package nota.npd.com.integrations;
 
 import android.content.Context;
 
@@ -1853,10 +1853,10 @@ public abstract class BaseIntegration {
 
 ### 5.3 ClickUpIntegration.java
 
-**Location:** `android/app/src/main/java/com/npd/nota/integrations/ClickUpIntegration.java`
+**Location:** `android/app/src/main/java/nota/npd/com/integrations/ClickUpIntegration.java`
 
 ```java
-package com.npd.nota.integrations;
+package nota.npd.com.integrations;
 
 import android.content.Context;
 import android.util.Log;
@@ -2160,10 +2160,10 @@ public class ClickUpIntegration extends BaseIntegration {
 
 ### 5.4 NotionIntegration.java
 
-**Location:** `android/app/src/main/java/com/npd/nota/integrations/NotionIntegration.java`
+**Location:** `android/app/src/main/java/nota/npd/com/integrations/NotionIntegration.java`
 
 ```java
-package com.npd.nota.integrations;
+package nota.npd.com.integrations;
 
 import android.content.Context;
 import android.util.Log;
@@ -2428,10 +2428,10 @@ public class NotionIntegration extends BaseIntegration {
 
 ### 5.5 HubSpotIntegration.java
 
-**Location:** `android/app/src/main/java/com/npd/nota/integrations/HubSpotIntegration.java`
+**Location:** `android/app/src/main/java/nota/npd/com/integrations/HubSpotIntegration.java`
 
 ```java
-package com.npd.nota.integrations;
+package nota.npd.com.integrations;
 
 import android.content.Context;
 import android.util.Log;
@@ -2711,22 +2711,22 @@ public class HubSpotIntegration extends BaseIntegration {
 
 ## 6. UI Integration (MainActivity.java Updates)
 
-**Location:** `android/app/src/main/java/com/npd/nota/MainActivity.java`
+**Location:** `android/app/src/main/java/nota/npd/com/MainActivity.java`
 
 Add initialization code:
 
 ```java
-package com.npd.nota;
+package nota.npd.com;
 
 import android.os.Bundle;
 import android.content.Intent;
 
 import com.getcapacitor.BridgeActivity;
 
-import com.npd.nota.sync.CloudSyncManager;
-import com.npd.nota.sync.SyncWorker;
-import com.npd.nota.calendar.CalendarSyncManager;
-import com.npd.nota.integrations.IntegrationManager;
+import nota.npd.com.sync.CloudSyncManager;
+import nota.npd.com.sync.SyncWorker;
+import nota.npd.com.calendar.CalendarSyncManager;
+import nota.npd.com.integrations.IntegrationManager;
 
 public class MainActivity extends BridgeActivity {
     
@@ -2774,18 +2774,18 @@ public class MainActivity extends BridgeActivity {
 |------|----------|
 | `google-services.json` | `android/app/google-services.json` |
 | `GoogleService-Info.plist` | `ios/App/App/GoogleService-Info.plist` |
-| `CloudSyncManager.java` | `android/app/src/main/java/com/npd/nota/sync/CloudSyncManager.java` |
-| `SyncWorker.java` | `android/app/src/main/java/com/npd/nota/sync/SyncWorker.java` |
-| `SyncService.java` | `android/app/src/main/java/com/npd/nota/sync/SyncService.java` |
-| `BootReceiver.java` | `android/app/src/main/java/com/npd/nota/sync/BootReceiver.java` |
-| `GoogleCalendarHelper.java` | `android/app/src/main/java/com/npd/nota/calendar/GoogleCalendarHelper.java` |
-| `CalendarSyncManager.java` | `android/app/src/main/java/com/npd/nota/calendar/CalendarSyncManager.java` |
-| `IntegrationManager.java` | `android/app/src/main/java/com/npd/nota/integrations/IntegrationManager.java` |
-| `BaseIntegration.java` | `android/app/src/main/java/com/npd/nota/integrations/BaseIntegration.java` |
-| `ClickUpIntegration.java` | `android/app/src/main/java/com/npd/nota/integrations/ClickUpIntegration.java` |
-| `NotionIntegration.java` | `android/app/src/main/java/com/npd/nota/integrations/NotionIntegration.java` |
-| `HubSpotIntegration.java` | `android/app/src/main/java/com/npd/nota/integrations/HubSpotIntegration.java` |
-| `MainActivity.java` | `android/app/src/main/java/com/npd/nota/MainActivity.java` |
+| `CloudSyncManager.java` | `android/app/src/main/java/nota/npd/com/sync/CloudSyncManager.java` |
+| `SyncWorker.java` | `android/app/src/main/java/nota/npd/com/sync/SyncWorker.java` |
+| `SyncService.java` | `android/app/src/main/java/nota/npd/com/sync/SyncService.java` |
+| `BootReceiver.java` | `android/app/src/main/java/nota/npd/com/sync/BootReceiver.java` |
+| `GoogleCalendarHelper.java` | `android/app/src/main/java/nota/npd/com/calendar/GoogleCalendarHelper.java` |
+| `CalendarSyncManager.java` | `android/app/src/main/java/nota/npd/com/calendar/CalendarSyncManager.java` |
+| `IntegrationManager.java` | `android/app/src/main/java/nota/npd/com/integrations/IntegrationManager.java` |
+| `BaseIntegration.java` | `android/app/src/main/java/nota/npd/com/integrations/BaseIntegration.java` |
+| `ClickUpIntegration.java` | `android/app/src/main/java/nota/npd/com/integrations/ClickUpIntegration.java` |
+| `NotionIntegration.java` | `android/app/src/main/java/nota/npd/com/integrations/NotionIntegration.java` |
+| `HubSpotIntegration.java` | `android/app/src/main/java/nota/npd/com/integrations/HubSpotIntegration.java` |
+| `MainActivity.java` | `android/app/src/main/java/nota/npd/com/MainActivity.java` |
 
 ---
 
@@ -2841,18 +2841,18 @@ public class MainActivity extends BridgeActivity {
 |---|-----------|---------------|---------|
 | 1 | `google-services.json` | `android/app/google-services.json` | Firebase configuration for Android |
 | 2 | `GoogleService-Info.plist` | `ios/App/App/GoogleService-Info.plist` | Firebase configuration for iOS |
-| 3 | `CloudSyncManager.java` | `android/app/src/main/java/com/npd/nota/sync/CloudSyncManager.java` | Main cloud sync logic |
-| 4 | `SyncWorker.java` | `android/app/src/main/java/com/npd/nota/sync/SyncWorker.java` | Background sync with WorkManager |
-| 5 | `SyncService.java` | `android/app/src/main/java/com/npd/nota/sync/SyncService.java` | Foreground sync service |
-| 6 | `BootReceiver.java` | `android/app/src/main/java/com/npd/nota/sync/BootReceiver.java` | Auto-start sync on device boot |
-| 7 | `GoogleCalendarHelper.java` | `android/app/src/main/java/com/npd/nota/calendar/GoogleCalendarHelper.java` | Google Calendar API wrapper |
-| 8 | `CalendarSyncManager.java` | `android/app/src/main/java/com/npd/nota/calendar/CalendarSyncManager.java` | Two-way calendar sync logic |
-| 9 | `IntegrationManager.java` | `android/app/src/main/java/com/npd/nota/integrations/IntegrationManager.java` | Manages all third-party integrations |
-| 10 | `BaseIntegration.java` | `android/app/src/main/java/com/npd/nota/integrations/BaseIntegration.java` | Abstract base class for integrations |
-| 11 | `ClickUpIntegration.java` | `android/app/src/main/java/com/npd/nota/integrations/ClickUpIntegration.java` | ClickUp API integration |
-| 12 | `NotionIntegration.java` | `android/app/src/main/java/com/npd/nota/integrations/NotionIntegration.java` | Notion API integration |
-| 13 | `HubSpotIntegration.java` | `android/app/src/main/java/com/npd/nota/integrations/HubSpotIntegration.java` | HubSpot API integration |
-| 14 | `MainActivity.java` | `android/app/src/main/java/com/npd/nota/MainActivity.java` | Main activity with sync initialization |
+| 3 | `CloudSyncManager.java` | `android/app/src/main/java/nota/npd/com/sync/CloudSyncManager.java` | Main cloud sync logic |
+| 4 | `SyncWorker.java` | `android/app/src/main/java/nota/npd/com/sync/SyncWorker.java` | Background sync with WorkManager |
+| 5 | `SyncService.java` | `android/app/src/main/java/nota/npd/com/sync/SyncService.java` | Foreground sync service |
+| 6 | `BootReceiver.java` | `android/app/src/main/java/nota/npd/com/sync/BootReceiver.java` | Auto-start sync on device boot |
+| 7 | `GoogleCalendarHelper.java` | `android/app/src/main/java/nota/npd/com/calendar/GoogleCalendarHelper.java` | Google Calendar API wrapper |
+| 8 | `CalendarSyncManager.java` | `android/app/src/main/java/nota/npd/com/calendar/CalendarSyncManager.java` | Two-way calendar sync logic |
+| 9 | `IntegrationManager.java` | `android/app/src/main/java/nota/npd/com/integrations/IntegrationManager.java` | Manages all third-party integrations |
+| 10 | `BaseIntegration.java` | `android/app/src/main/java/nota/npd/com/integrations/BaseIntegration.java` | Abstract base class for integrations |
+| 11 | `ClickUpIntegration.java` | `android/app/src/main/java/nota/npd/com/integrations/ClickUpIntegration.java` | ClickUp API integration |
+| 12 | `NotionIntegration.java` | `android/app/src/main/java/nota/npd/com/integrations/NotionIntegration.java` | Notion API integration |
+| 13 | `HubSpotIntegration.java` | `android/app/src/main/java/nota/npd/com/integrations/HubSpotIntegration.java` | HubSpot API integration |
+| 14 | `MainActivity.java` | `android/app/src/main/java/nota/npd/com/MainActivity.java` | Main activity with sync initialization |
 | 15 | `AndroidManifest.xml` | `android/app/src/main/AndroidManifest.xml` | App permissions and services |
 | 16 | `build.gradle` (project) | `android/build.gradle` | Project-level dependencies |
 | 17 | `build.gradle` (app) | `android/app/build.gradle` | App-level dependencies |
@@ -2874,7 +2874,7 @@ public class MainActivity extends BridgeActivity {
 2. Click **"Create a project"** or select existing project
 3. Go to **Project Settings** (gear icon)
 4. Scroll to **"Your apps"** section
-5. Click **Android icon** → Enter package: `com.npd.nota`
+5. Click **Android icon** → Enter package: `nota.npd.com`
 6. Download `google-services.json`
 7. Place in `android/app/google-services.json`
 
@@ -2886,7 +2886,7 @@ public class MainActivity extends BridgeActivity {
 5. Go to **APIs & Services** → **Credentials**
 6. Click **"Create Credentials"** → **OAuth client ID**
 7. Select **Android** application type
-8. Enter package name: `com.npd.nota`
+8. Enter package name: `nota.npd.com`
 9. Enter SHA-1 fingerprint (from `./gradlew signingReport`)
 10. Download OAuth client configuration
 
@@ -3029,9 +3029,9 @@ android/
 │       └── main/
 │           ├── AndroidManifest.xml             ← Permissions & services
 │           ├── java/
-│           │   └── com/
+│           │   └── nota/
 │           │       └── npd/
-│           │           └── nota/
+│           │           └── com/
 │           │               ├── MainActivity.java
 │           │               ├── sync/
 │           │               │   ├── CloudSyncManager.java
@@ -3115,6 +3115,6 @@ ios/
 
 ---
 
-**Package Name:** `com.npd.nota`
+**Package Name:** `nota.npd.com`
 
 **Last Updated:** January 2026
