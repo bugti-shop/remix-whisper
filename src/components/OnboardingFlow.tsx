@@ -24,7 +24,7 @@ import featureTables from '@/assets/feature-tables.png';
 import featureMedia from '@/assets/feature-media.png';
 import featureFolders from '@/assets/feature-folders.png';
 import featureTaskInput from '@/assets/feature-task-input.png';
-import featureTaskList from '@/assets/feature-task-list.png';
+import featureTaskList from '@/assets/feature-task-list-new.png';
 import featurePriority from '@/assets/feature-priority.png';
 import featureOptions from '@/assets/feature-options.png';
 import featureDragDrop from '@/assets/feature-drag-drop.png';
