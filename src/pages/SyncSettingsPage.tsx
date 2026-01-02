@@ -19,7 +19,7 @@ const SyncSettingsPage = () => {
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-base xs:text-lg sm:text-xl font-bold">Sync & Integrations</h1>
+            <h1 className="text-base xs:text-lg sm:text-xl font-bold">Integrations & Import</h1>
           </div>
         </div>
       </header>
