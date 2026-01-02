@@ -7,7 +7,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { WelcomeProvider, useWelcome } from "@/contexts/WelcomeContext";
 import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
-import { RevenueCatProvider } from "@/contexts/RevenueCatContext";
+import { RevenueCatProvider, useRevenueCat } from "@/contexts/RevenueCatContext";
+import { SubscriptionGuard } from "@/components/SubscriptionGuard";
 import OnboardingFlow from "@/components/OnboardingFlow";
 import Index from "./pages/Index";
 import Notes from "./pages/Notes";
@@ -24,7 +25,7 @@ import CustomToolDetail from "./pages/todo/CustomToolDetail";
 import NotFound from "./pages/NotFound";
 import { NavigationBackProvider } from "@/components/NavigationBackProvider";
 import { notificationManager } from "@/utils/notifications";
-import { addDays } from "date-fns";
+import { Capacitor } from "@capacitor/core";
 
 const queryClient = new QueryClient();
 
@@ -66,33 +67,45 @@ const AppRoutes = () => {
 
 const AppContent = () => {
   const { hasSeenWelcome, completeWelcome, resetWelcome } = useWelcome();
+  const { isPro, isInitialized, presentPaywallIfNeeded, checkEntitlement } = useRevenueCat();
 
-  // Check if trial has expired and lock access
+  // Check subscription status and redirect to paywall if expired
   useEffect(() => {
-    const checkTrialExpiration = () => {
-      const trialStartStr = localStorage.getItem('npd_trial_start');
-      const hasAdminAccess = localStorage.getItem('npd_admin_bypass') === 'true';
-      const hasProAccess = localStorage.getItem('npd_pro_access') === 'true';
-      
-      // Skip check for admins or if no trial started
-      if (hasAdminAccess || !trialStartStr || !hasProAccess) return;
-      
-      const trialStart = new Date(trialStartStr);
-      const trialEnd = addDays(trialStart, 3); // 3-day trial
-      const now = new Date();
-      
-      if (now >= trialEnd) {
-        // Trial expired - reset to onboarding paywall
-        console.log('Trial expired, redirecting to paywall');
+    const checkSubscriptionStatus = async () => {
+      // Only check on native platforms
+      if (!Capacitor.isNativePlatform()) {
+        return;
+      }
+
+      // Wait for RevenueCat to initialize
+      if (!isInitialized) {
+        return;
+      }
+
+      // Check if user has active subscription
+      const hasActiveSubscription = await checkEntitlement();
+
+      if (!hasActiveSubscription) {
+        // Subscription expired or cancelled - clear local access
+        localStorage.removeItem('npd_pro_access');
+        localStorage.removeItem('npd_trial_start');
+        
+        console.log('Subscription expired, redirecting to paywall');
+        
+        // Reset to onboarding/paywall
         resetWelcome();
+        
+        // Present paywall
+        await presentPaywallIfNeeded();
       }
     };
+
+    checkSubscriptionStatus();
     
-    checkTrialExpiration();
-    // Check every minute
-    const interval = setInterval(checkTrialExpiration, 60000);
+    // Check every 5 minutes
+    const interval = setInterval(checkSubscriptionStatus, 5 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [resetWelcome]);
+  }, [isInitialized, checkEntitlement, presentPaywallIfNeeded, resetWelcome]);
 
   useEffect(() => {
     notificationManager.initialize().catch(console.error);
@@ -103,11 +116,11 @@ const AppContent = () => {
   }
 
   return (
-    <>
+    <SubscriptionGuard onSubscriptionExpired={resetWelcome}>
       <Toaster />
       <Sonner />
       <AppRoutes />
-    </>
+    </SubscriptionGuard>
   );
 };
 
