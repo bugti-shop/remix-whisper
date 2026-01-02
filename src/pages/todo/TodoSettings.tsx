@@ -1,4 +1,4 @@
-import { ChevronRight, Settings as SettingsIcon, Grid3X3, Timer, Clock, BarChart3, Focus, CalendarDays, CalendarRange, Plus, Eye, EyeOff, Trash2, Edit2, Target, Zap, Brain, Sparkles, Palette, Check } from 'lucide-react';
+import { ChevronRight, Settings as SettingsIcon, Grid3X3, Timer, Clock, BarChart3, Focus, CalendarDays, CalendarRange, Plus, Eye, EyeOff, Trash2, Edit2, Target, Zap, Brain, Sparkles, Palette, Check, Cloud } from 'lucide-react';
 import { useDarkMode, themes } from '@/hooks/useDarkMode';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect, lazy, Suspense } from 'react';
@@ -353,6 +353,23 @@ const TodoSettings = () => {
                   {themes.find(t => t.id === currentTheme)?.name || 'Light Mode'}
                 </span>
               </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </button>
+          </div>
+
+          {/* Sync & Integrations Section */}
+          <div className="bg-card border rounded-lg">
+            <div className="p-4 border-b">
+              <div className="flex items-center gap-2">
+                <Cloud className="h-5 w-5 text-primary" />
+                <h2 className="font-semibold">Sync & Integrations</h2>
+              </div>
+            </div>
+            <button
+              onClick={() => navigate('/settings/sync')}
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-secondary/50 transition-colors"
+            >
+              <span className="text-foreground text-sm">Cloud Sync & Imports</span>
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </button>
           </div>
