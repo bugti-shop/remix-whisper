@@ -3115,6 +3115,1815 @@ ios/
 
 ---
 
+---
+
+## 16. Task Import from Other Apps
+
+NPD app allows users to import their existing tasks from popular task management apps. This section covers how to implement import functionality for each supported app.
+
+### 16.1 Important Notes About Pricing
+
+| App | API Access | Pricing |
+|-----|------------|---------|
+| **TickTick** | ✅ Free API | FREE (personal use) |
+| **Todoist** | ✅ Free API | FREE (with rate limits) |
+| **Any.do** | ⚠️ Limited | No public API (use export file) |
+| **Google Tasks** | ✅ Free API | FREE (Google Cloud Console) |
+| **Microsoft To Do** | ✅ Free API | FREE (Microsoft Graph) |
+| **Notion** | ✅ Free API | FREE tier available |
+| **ClickUp** | ✅ Free API | FREE tier available |
+| **HubSpot** | ✅ Free API | FREE CRM tier |
+
+> **Note:** All these integrations have FREE tiers! Users don't need to pay for basic API access.
+
+---
+
+### 16.2 TickTick Import
+
+TickTick has an official Open API for developers.
+
+#### Get TickTick API Access
+
+1. Go to [TickTick Developer Portal](https://developer.ticktick.com/)
+2. Sign in with your TickTick account
+3. Create a new application
+4. Note down your **Client ID** and **Client Secret**
+5. Set redirect URI: `nota.npd.com://oauth/ticktick`
+
+#### TickTickImportManager.java
+
+**Location:** `android/app/src/main/java/nota/npd/com/imports/TickTickImportManager.java`
+
+```java
+package nota.npd.com.imports;
+
+import android.content.Context;
+import android.util.Log;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.TimeUnit;
+
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+
+/**
+ * TickTickImportManager - Import tasks from TickTick
+ * 
+ * API Documentation: https://developer.ticktick.com/api
+ */
+public class TickTickImportManager {
+    
+    private static final String TAG = "TickTickImport";
+    private static final String BASE_URL = "https://api.ticktick.com/open/v1";
+    private static final String AUTH_URL = "https://ticktick.com/oauth/authorize";
+    private static final String TOKEN_URL = "https://ticktick.com/oauth/token";
+    
+    private final Context context;
+    private final OkHttpClient client;
+    
+    private String accessToken;
+    private String refreshToken;
+    
+    // Your TickTick App Credentials (from developer portal)
+    private static final String CLIENT_ID = "YOUR_TICKTICK_CLIENT_ID";
+    private static final String CLIENT_SECRET = "YOUR_TICKTICK_CLIENT_SECRET";
+    private static final String REDIRECT_URI = "nota.npd.com://oauth/ticktick";
+    
+    public interface ImportCallback {
+        void onSuccess(List<ImportedTask> tasks);
+        void onError(String error);
+        void onProgress(int current, int total);
+    }
+    
+    public TickTickImportManager(Context context) {
+        this.context = context;
+        this.client = new OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .build();
+    }
+    
+    /**
+     * Get OAuth authorization URL
+     */
+    public String getAuthorizationUrl() {
+        return AUTH_URL + 
+            "?client_id=" + CLIENT_ID +
+            "&scope=tasks:read" +
+            "&redirect_uri=" + REDIRECT_URI +
+            "&response_type=code";
+    }
+    
+    /**
+     * Exchange authorization code for access token
+     */
+    public void exchangeCodeForToken(String authCode, TokenCallback callback) {
+        new Thread(() -> {
+            try {
+                String credentials = CLIENT_ID + ":" + CLIENT_SECRET;
+                String basicAuth = android.util.Base64.encodeToString(
+                    credentials.getBytes(), android.util.Base64.NO_WRAP);
+                
+                RequestBody body = RequestBody.create(
+                    "code=" + authCode + 
+                    "&grant_type=authorization_code" +
+                    "&redirect_uri=" + REDIRECT_URI +
+                    "&scope=tasks:read",
+                    MediaType.parse("application/x-www-form-urlencoded")
+                );
+                
+                Request request = new Request.Builder()
+                    .url(TOKEN_URL)
+                    .addHeader("Authorization", "Basic " + basicAuth)
+                    .post(body)
+                    .build();
+                
+                Response response = client.newCall(request).execute();
+                
+                if (response.isSuccessful() && response.body() != null) {
+                    JSONObject json = new JSONObject(response.body().string());
+                    accessToken = json.getString("access_token");
+                    refreshToken = json.optString("refresh_token");
+                    saveTokens();
+                    callback.onSuccess(accessToken);
+                } else {
+                    callback.onError("Failed to get token: " + response.code());
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Token exchange failed", e);
+                callback.onError(e.getMessage());
+            }
+        }).start();
+    }
+    
+    /**
+     * Import all tasks from TickTick
+     */
+    public void importAllTasks(ImportCallback callback) {
+        if (accessToken == null) {
+            callback.onError("Not authenticated");
+            return;
+        }
+        
+        new Thread(() -> {
+            try {
+                List<ImportedTask> allTasks = new ArrayList<>();
+                
+                // 1. Get all projects (lists)
+                Request projectsRequest = new Request.Builder()
+                    .url(BASE_URL + "/project")
+                    .addHeader("Authorization", "Bearer " + accessToken)
+                    .build();
+                
+                Response projectsResponse = client.newCall(projectsRequest).execute();
+                
+                if (!projectsResponse.isSuccessful()) {
+                    callback.onError("Failed to fetch projects");
+                    return;
+                }
+                
+                JSONArray projects = new JSONArray(projectsResponse.body().string());
+                int totalProjects = projects.length();
+                
+                // 2. Get tasks from each project
+                for (int i = 0; i < projects.length(); i++) {
+                    JSONObject project = projects.getJSONObject(i);
+                    String projectId = project.getString("id");
+                    String projectName = project.getString("name");
+                    
+                    callback.onProgress(i + 1, totalProjects);
+                    
+                    // Get tasks for this project
+                    Request tasksRequest = new Request.Builder()
+                        .url(BASE_URL + "/project/" + projectId + "/data")
+                        .addHeader("Authorization", "Bearer " + accessToken)
+                        .build();
+                    
+                    Response tasksResponse = client.newCall(tasksRequest).execute();
+                    
+                    if (tasksResponse.isSuccessful() && tasksResponse.body() != null) {
+                        JSONObject data = new JSONObject(tasksResponse.body().string());
+                        JSONArray tasks = data.optJSONArray("tasks");
+                        
+                        if (tasks != null) {
+                            for (int j = 0; j < tasks.length(); j++) {
+                                JSONObject task = tasks.getJSONObject(j);
+                                ImportedTask importedTask = parseTickTickTask(task, projectName);
+                                allTasks.add(importedTask);
+                            }
+                        }
+                    }
+                }
+                
+                callback.onSuccess(allTasks);
+                
+            } catch (Exception e) {
+                Log.e(TAG, "Import failed", e);
+                callback.onError(e.getMessage());
+            }
+        }).start();
+    }
+    
+    private ImportedTask parseTickTickTask(JSONObject json, String folderName) throws Exception {
+        ImportedTask task = new ImportedTask();
+        task.id = json.getString("id");
+        task.title = json.getString("title");
+        task.content = json.optString("content", "");
+        task.folderName = folderName;
+        task.completed = json.optInt("status") == 2;
+        task.priority = mapTickTickPriority(json.optInt("priority"));
+        task.sourceApp = "TickTick";
+        
+        // Parse due date
+        String dueDate = json.optString("dueDate");
+        if (dueDate != null && !dueDate.isEmpty()) {
+            task.dueDate = parseISO8601Date(dueDate);
+        }
+        
+        // Parse subtasks (items)
+        JSONArray items = json.optJSONArray("items");
+        if (items != null) {
+            task.subtasks = new ArrayList<>();
+            for (int i = 0; i < items.length(); i++) {
+                JSONObject item = items.getJSONObject(i);
+                ImportedTask.Subtask subtask = new ImportedTask.Subtask();
+                subtask.title = item.getString("title");
+                subtask.completed = item.optInt("status") == 2;
+                task.subtasks.add(subtask);
+            }
+        }
+        
+        // Parse tags
+        JSONArray tags = json.optJSONArray("tags");
+        if (tags != null) {
+            task.tags = new ArrayList<>();
+            for (int i = 0; i < tags.length(); i++) {
+                task.tags.add(tags.getString(i));
+            }
+        }
+        
+        return task;
+    }
+    
+    private int mapTickTickPriority(int tickTickPriority) {
+        // TickTick: 0=none, 1=low, 3=medium, 5=high
+        // NPD: 0=none, 1=low, 2=medium, 3=high
+        switch (tickTickPriority) {
+            case 5: return 3; // High
+            case 3: return 2; // Medium
+            case 1: return 1; // Low
+            default: return 0; // None
+        }
+    }
+    
+    private Date parseISO8601Date(String dateString) {
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.US);
+            return sdf.parse(dateString);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    private void saveTokens() {
+        context.getSharedPreferences("ticktick_auth", Context.MODE_PRIVATE)
+            .edit()
+            .putString("access_token", accessToken)
+            .putString("refresh_token", refreshToken)
+            .apply();
+    }
+    
+    public void loadTokens() {
+        accessToken = context.getSharedPreferences("ticktick_auth", Context.MODE_PRIVATE)
+            .getString("access_token", null);
+        refreshToken = context.getSharedPreferences("ticktick_auth", Context.MODE_PRIVATE)
+            .getString("refresh_token", null);
+    }
+    
+    public boolean isAuthenticated() {
+        loadTokens();
+        return accessToken != null;
+    }
+    
+    public interface TokenCallback {
+        void onSuccess(String token);
+        void onError(String error);
+    }
+}
+```
+
+---
+
+### 16.3 Todoist Import
+
+Todoist has a REST API with generous free limits.
+
+#### Get Todoist API Access
+
+1. Go to [Todoist App Console](https://developer.todoist.com/appconsole.html)
+2. Create a new app
+3. Note down your **Client ID** and **Client Secret**
+4. Or use the simpler **API Token** from Settings → Integrations → Developer
+
+#### TodoistImportManager.java
+
+**Location:** `android/app/src/main/java/nota/npd/com/imports/TodoistImportManager.java`
+
+```java
+package nota.npd.com.imports;
+
+import android.content.Context;
+import android.util.Log;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+
+/**
+ * TodoistImportManager - Import tasks from Todoist
+ * 
+ * API Documentation: https://developer.todoist.com/rest/v2
+ * Rate Limit: 450 requests per 15 minutes (free)
+ */
+public class TodoistImportManager {
+    
+    private static final String TAG = "TodoistImport";
+    private static final String BASE_URL = "https://api.todoist.com/rest/v2";
+    private static final String SYNC_URL = "https://api.todoist.com/sync/v9";
+    
+    private final Context context;
+    private final OkHttpClient client;
+    
+    private String apiToken;
+    
+    public interface ImportCallback {
+        void onSuccess(List<ImportedTask> tasks);
+        void onError(String error);
+        void onProgress(int current, int total);
+    }
+    
+    public TodoistImportManager(Context context) {
+        this.context = context;
+        this.client = new OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .build();
+    }
+    
+    /**
+     * Set API Token (from Todoist Settings → Integrations → API token)
+     */
+    public void setApiToken(String token) {
+        this.apiToken = token;
+        saveToken();
+    }
+    
+    /**
+     * Import all tasks from Todoist
+     */
+    public void importAllTasks(ImportCallback callback) {
+        if (apiToken == null) {
+            callback.onError("API token not set");
+            return;
+        }
+        
+        new Thread(() -> {
+            try {
+                List<ImportedTask> allTasks = new ArrayList<>();
+                Map<String, String> projectNames = new HashMap<>();
+                
+                // 1. Get all projects
+                Request projectsRequest = new Request.Builder()
+                    .url(BASE_URL + "/projects")
+                    .addHeader("Authorization", "Bearer " + apiToken)
+                    .build();
+                
+                Response projectsResponse = client.newCall(projectsRequest).execute();
+                
+                if (!projectsResponse.isSuccessful()) {
+                    callback.onError("Failed to fetch projects: " + projectsResponse.code());
+                    return;
+                }
+                
+                JSONArray projects = new JSONArray(projectsResponse.body().string());
+                for (int i = 0; i < projects.length(); i++) {
+                    JSONObject project = projects.getJSONObject(i);
+                    projectNames.put(project.getString("id"), project.getString("name"));
+                }
+                
+                callback.onProgress(1, 3);
+                
+                // 2. Get all active tasks
+                Request tasksRequest = new Request.Builder()
+                    .url(BASE_URL + "/tasks")
+                    .addHeader("Authorization", "Bearer " + apiToken)
+                    .build();
+                
+                Response tasksResponse = client.newCall(tasksRequest).execute();
+                
+                if (!tasksResponse.isSuccessful()) {
+                    callback.onError("Failed to fetch tasks: " + tasksResponse.code());
+                    return;
+                }
+                
+                JSONArray tasks = new JSONArray(tasksResponse.body().string());
+                
+                callback.onProgress(2, 3);
+                
+                for (int i = 0; i < tasks.length(); i++) {
+                    JSONObject task = tasks.getJSONObject(i);
+                    String projectId = task.optString("project_id");
+                    String folderName = projectNames.getOrDefault(projectId, "Inbox");
+                    
+                    ImportedTask importedTask = parseTodoistTask(task, folderName);
+                    allTasks.add(importedTask);
+                }
+                
+                // 3. Optionally get completed tasks (requires Sync API)
+                // Note: Completed tasks are available via Sync API
+                
+                callback.onProgress(3, 3);
+                callback.onSuccess(allTasks);
+                
+            } catch (Exception e) {
+                Log.e(TAG, "Import failed", e);
+                callback.onError(e.getMessage());
+            }
+        }).start();
+    }
+    
+    /**
+     * Import completed tasks (using Sync API)
+     */
+    public void importCompletedTasks(ImportCallback callback, int limit) {
+        if (apiToken == null) {
+            callback.onError("API token not set");
+            return;
+        }
+        
+        new Thread(() -> {
+            try {
+                Request request = new Request.Builder()
+                    .url(SYNC_URL + "/completed/get_all?limit=" + limit)
+                    .addHeader("Authorization", "Bearer " + apiToken)
+                    .build();
+                
+                Response response = client.newCall(request).execute();
+                
+                if (!response.isSuccessful()) {
+                    callback.onError("Failed to fetch completed tasks");
+                    return;
+                }
+                
+                JSONObject data = new JSONObject(response.body().string());
+                JSONArray items = data.getJSONArray("items");
+                
+                List<ImportedTask> completedTasks = new ArrayList<>();
+                for (int i = 0; i < items.length(); i++) {
+                    JSONObject item = items.getJSONObject(i);
+                    ImportedTask task = new ImportedTask();
+                    task.id = item.getString("id");
+                    task.title = item.getString("content");
+                    task.completed = true;
+                    task.sourceApp = "Todoist";
+                    completedTasks.add(task);
+                }
+                
+                callback.onSuccess(completedTasks);
+                
+            } catch (Exception e) {
+                callback.onError(e.getMessage());
+            }
+        }).start();
+    }
+    
+    private ImportedTask parseTodoistTask(JSONObject json, String folderName) throws Exception {
+        ImportedTask task = new ImportedTask();
+        task.id = json.getString("id");
+        task.title = json.getString("content");
+        task.content = json.optString("description", "");
+        task.folderName = folderName;
+        task.completed = json.optBoolean("is_completed", false);
+        task.priority = mapTodoistPriority(json.optInt("priority", 1));
+        task.sourceApp = "Todoist";
+        
+        // Parse due date
+        JSONObject due = json.optJSONObject("due");
+        if (due != null) {
+            String dateStr = due.optString("date");
+            if (dateStr != null) {
+                task.dueDate = parseDate(dateStr);
+            }
+            task.isRecurring = due.optBoolean("is_recurring", false);
+            task.recurringString = due.optString("string");
+        }
+        
+        // Parse labels as tags
+        JSONArray labels = json.optJSONArray("labels");
+        if (labels != null) {
+            task.tags = new ArrayList<>();
+            for (int i = 0; i < labels.length(); i++) {
+                task.tags.add(labels.getString(i));
+            }
+        }
+        
+        return task;
+    }
+    
+    private int mapTodoistPriority(int todoistPriority) {
+        // Todoist: 1=normal, 2=medium, 3=high, 4=urgent
+        // NPD: 0=none, 1=low, 2=medium, 3=high
+        switch (todoistPriority) {
+            case 4: return 3; // Urgent → High
+            case 3: return 3; // High
+            case 2: return 2; // Medium
+            default: return 0; // Normal → None
+        }
+    }
+    
+    private Date parseDate(String dateString) {
+        try {
+            // Todoist uses YYYY-MM-DD format
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+            return sdf.parse(dateString);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    private void saveToken() {
+        context.getSharedPreferences("todoist_auth", Context.MODE_PRIVATE)
+            .edit()
+            .putString("api_token", apiToken)
+            .apply();
+    }
+    
+    public void loadToken() {
+        apiToken = context.getSharedPreferences("todoist_auth", Context.MODE_PRIVATE)
+            .getString("api_token", null);
+    }
+    
+    public boolean isAuthenticated() {
+        loadToken();
+        return apiToken != null;
+    }
+}
+```
+
+---
+
+### 16.4 Google Tasks Import
+
+Google Tasks uses the Google Tasks API (free).
+
+#### Get Google Tasks API Access
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create or select a project
+3. Go to **APIs & Services → Library**
+4. Search for "Tasks API" and enable it
+5. Go to **Credentials → Create Credentials → OAuth 2.0 Client ID**
+6. Select "Android" and add your package name: `nota.npd.com`
+7. Add SHA-1 fingerprint
+
+#### GoogleTasksImportManager.java
+
+**Location:** `android/app/src/main/java/nota/npd/com/imports/GoogleTasksImportManager.java`
+
+```java
+package nota.npd.com.imports;
+
+import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
+import android.util.Log;
+
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.common.api.Scope;
+import com.google.api.client.extensions.android.http.AndroidHttp;
+import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
+import com.google.api.client.json.gson.GsonFactory;
+import com.google.api.services.tasks.Tasks;
+import com.google.api.services.tasks.TasksScopes;
+import com.google.api.services.tasks.model.Task;
+import com.google.api.services.tasks.model.TaskList;
+import com.google.api.services.tasks.model.TaskLists;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+
+/**
+ * GoogleTasksImportManager - Import tasks from Google Tasks
+ * 
+ * API Documentation: https://developers.google.com/tasks
+ * Rate Limit: 50,000 queries per day (free)
+ */
+public class GoogleTasksImportManager {
+    
+    private static final String TAG = "GoogleTasksImport";
+    public static final int RC_SIGN_IN = 9002;
+    
+    private final Context context;
+    private GoogleSignInClient signInClient;
+    private Tasks tasksService;
+    
+    public interface ImportCallback {
+        void onSuccess(List<ImportedTask> tasks);
+        void onError(String error);
+        void onProgress(int current, int total);
+    }
+    
+    public interface SignInCallback {
+        void onSignInRequired(Intent signInIntent);
+        void onSignedIn();
+        void onError(String error);
+    }
+    
+    public GoogleTasksImportManager(Context context) {
+        this.context = context;
+        initSignInClient();
+    }
+    
+    private void initSignInClient() {
+        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestEmail()
+            .requestScopes(new Scope(TasksScopes.TASKS_READONLY))
+            .build();
+        
+        signInClient = GoogleSignIn.getClient(context, gso);
+    }
+    
+    /**
+     * Check if signed in and initialize service
+     */
+    public void signIn(SignInCallback callback) {
+        GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(context);
+        
+        if (account != null && GoogleSignIn.hasPermissions(account, new Scope(TasksScopes.TASKS_READONLY))) {
+            initTasksService(account);
+            callback.onSignedIn();
+        } else {
+            callback.onSignInRequired(signInClient.getSignInIntent());
+        }
+    }
+    
+    /**
+     * Handle sign-in result from activity
+     */
+    public void handleSignInResult(Intent data, SignInCallback callback) {
+        GoogleSignIn.getSignedInAccountFromIntent(data)
+            .addOnSuccessListener(account -> {
+                initTasksService(account);
+                callback.onSignedIn();
+            })
+            .addOnFailureListener(e -> {
+                callback.onError(e.getMessage());
+            });
+    }
+    
+    private void initTasksService(GoogleSignInAccount account) {
+        GoogleAccountCredential credential = GoogleAccountCredential.usingOAuth2(
+            context, Collections.singleton(TasksScopes.TASKS_READONLY));
+        credential.setSelectedAccount(account.getAccount());
+        
+        tasksService = new Tasks.Builder(
+            AndroidHttp.newCompatibleTransport(),
+            GsonFactory.getDefaultInstance(),
+            credential)
+            .setApplicationName("NPD Notes")
+            .build();
+    }
+    
+    /**
+     * Import all tasks from Google Tasks
+     */
+    public void importAllTasks(ImportCallback callback) {
+        if (tasksService == null) {
+            callback.onError("Not signed in");
+            return;
+        }
+        
+        new Thread(() -> {
+            try {
+                List<ImportedTask> allTasks = new ArrayList<>();
+                
+                // 1. Get all task lists
+                TaskLists taskLists = tasksService.tasklists().list().execute();
+                List<TaskList> lists = taskLists.getItems();
+                
+                if (lists == null || lists.isEmpty()) {
+                    callback.onSuccess(allTasks);
+                    return;
+                }
+                
+                int totalLists = lists.size();
+                int current = 0;
+                
+                // 2. Get tasks from each list
+                for (TaskList taskList : lists) {
+                    current++;
+                    callback.onProgress(current, totalLists);
+                    
+                    String listId = taskList.getId();
+                    String listName = taskList.getTitle();
+                    
+                    // Get all tasks (including completed)
+                    com.google.api.services.tasks.model.Tasks tasks = 
+                        tasksService.tasks().list(listId)
+                            .setShowCompleted(true)
+                            .setShowHidden(true)
+                            .execute();
+                    
+                    List<Task> items = tasks.getItems();
+                    if (items != null) {
+                        for (Task task : items) {
+                            ImportedTask importedTask = parseGoogleTask(task, listName);
+                            allTasks.add(importedTask);
+                        }
+                    }
+                }
+                
+                callback.onSuccess(allTasks);
+                
+            } catch (Exception e) {
+                Log.e(TAG, "Import failed", e);
+                callback.onError(e.getMessage());
+            }
+        }).start();
+    }
+    
+    private ImportedTask parseGoogleTask(Task googleTask, String folderName) {
+        ImportedTask task = new ImportedTask();
+        task.id = googleTask.getId();
+        task.title = googleTask.getTitle();
+        task.content = googleTask.getNotes() != null ? googleTask.getNotes() : "";
+        task.folderName = folderName;
+        task.completed = "completed".equals(googleTask.getStatus());
+        task.priority = 0; // Google Tasks doesn't have priority
+        task.sourceApp = "Google Tasks";
+        
+        // Parse due date
+        if (googleTask.getDue() != null) {
+            try {
+                // Google Tasks uses RFC 3339 timestamp
+                task.dueDate = new Date(googleTask.getDue().getValue());
+            } catch (Exception e) {
+                task.dueDate = null;
+            }
+        }
+        
+        // Parse parent (for subtasks)
+        if (googleTask.getParent() != null) {
+            task.parentId = googleTask.getParent();
+        }
+        
+        return task;
+    }
+    
+    public boolean isSignedIn() {
+        GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(context);
+        return account != null && 
+               GoogleSignIn.hasPermissions(account, new Scope(TasksScopes.TASKS_READONLY));
+    }
+    
+    public void signOut() {
+        signInClient.signOut();
+        tasksService = null;
+    }
+}
+```
+
+---
+
+### 16.5 Microsoft To Do Import
+
+Microsoft To Do uses Microsoft Graph API (free).
+
+#### Get Microsoft Graph API Access
+
+1. Go to [Azure Portal](https://portal.azure.com/)
+2. Navigate to **Azure Active Directory → App registrations**
+3. Click **New registration**
+4. Enter app name: "NPD Notes"
+5. Select "Accounts in any organizational directory and personal Microsoft accounts"
+6. Add redirect URI: `msauth://nota.npd.com/callback`
+7. Note your **Application (client) ID**
+
+#### Add MSAL Dependency
+
+Add to `android/app/build.gradle`:
+
+```gradle
+dependencies {
+    // Microsoft Authentication Library
+    implementation 'com.microsoft.identity.client:msal:4.9.0'
+    
+    // Microsoft Graph SDK
+    implementation 'com.microsoft.graph:microsoft-graph:5.77.0'
+}
+```
+
+#### MicrosoftTodoImportManager.java
+
+**Location:** `android/app/src/main/java/nota/npd/com/imports/MicrosoftTodoImportManager.java`
+
+```java
+package nota.npd.com.imports;
+
+import android.app.Activity;
+import android.content.Context;
+import android.util.Log;
+
+import com.microsoft.graph.models.TodoTask;
+import com.microsoft.graph.models.TodoTaskList;
+import com.microsoft.graph.requests.GraphServiceClient;
+import com.microsoft.graph.requests.TodoTaskListCollectionPage;
+import com.microsoft.graph.requests.TodoTaskCollectionPage;
+import com.microsoft.identity.client.AuthenticationCallback;
+import com.microsoft.identity.client.IAuthenticationResult;
+import com.microsoft.identity.client.IPublicClientApplication;
+import com.microsoft.identity.client.ISingleAccountPublicClientApplication;
+import com.microsoft.identity.client.PublicClientApplication;
+import com.microsoft.identity.client.exception.MsalException;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+
+import okhttp3.Request;
+
+/**
+ * MicrosoftTodoImportManager - Import tasks from Microsoft To Do
+ * 
+ * API Documentation: https://docs.microsoft.com/en-us/graph/api/resources/todo-overview
+ * Rate Limit: 10,000 requests per 10 minutes (free)
+ */
+public class MicrosoftTodoImportManager {
+    
+    private static final String TAG = "MicrosoftTodoImport";
+    private static final String[] SCOPES = {"Tasks.Read", "User.Read"};
+    
+    // Your Azure App Client ID
+    private static final String CLIENT_ID = "YOUR_MICROSOFT_CLIENT_ID";
+    
+    private final Context context;
+    private ISingleAccountPublicClientApplication msalClient;
+    private GraphServiceClient<Request> graphClient;
+    private String accessToken;
+    
+    public interface ImportCallback {
+        void onSuccess(List<ImportedTask> tasks);
+        void onError(String error);
+        void onProgress(int current, int total);
+    }
+    
+    public interface SignInCallback {
+        void onSignInRequired();
+        void onSignedIn();
+        void onError(String error);
+    }
+    
+    public MicrosoftTodoImportManager(Context context) {
+        this.context = context;
+        initMsalClient();
+    }
+    
+    private void initMsalClient() {
+        PublicClientApplication.createSingleAccountPublicClientApplication(
+            context,
+            R.raw.msal_config,  // Config file in res/raw/
+            new IPublicClientApplication.ISingleAccountApplicationCreatedListener() {
+                @Override
+                public void onCreated(ISingleAccountPublicClientApplication application) {
+                    msalClient = application;
+                }
+                
+                @Override
+                public void onError(MsalException exception) {
+                    Log.e(TAG, "MSAL init failed", exception);
+                }
+            }
+        );
+    }
+    
+    /**
+     * Sign in to Microsoft account
+     */
+    public void signIn(Activity activity, SignInCallback callback) {
+        if (msalClient == null) {
+            callback.onError("MSAL not initialized");
+            return;
+        }
+        
+        msalClient.signIn(activity, null, SCOPES, new AuthenticationCallback() {
+            @Override
+            public void onSuccess(IAuthenticationResult result) {
+                accessToken = result.getAccessToken();
+                initGraphClient();
+                callback.onSignedIn();
+            }
+            
+            @Override
+            public void onError(MsalException exception) {
+                callback.onError(exception.getMessage());
+            }
+            
+            @Override
+            public void onCancel() {
+                callback.onError("Sign-in cancelled");
+            }
+        });
+    }
+    
+    /**
+     * Try silent sign-in
+     */
+    public void silentSignIn(SignInCallback callback) {
+        if (msalClient == null) {
+            callback.onError("MSAL not initialized");
+            return;
+        }
+        
+        msalClient.acquireTokenSilentAsync(SCOPES, msalClient.getCurrentAccount().getCurrentAccount().getAuthority(),
+            new AuthenticationCallback() {
+                @Override
+                public void onSuccess(IAuthenticationResult result) {
+                    accessToken = result.getAccessToken();
+                    initGraphClient();
+                    callback.onSignedIn();
+                }
+                
+                @Override
+                public void onError(MsalException exception) {
+                    callback.onSignInRequired();
+                }
+                
+                @Override
+                public void onCancel() {
+                    callback.onSignInRequired();
+                }
+            }
+        );
+    }
+    
+    private void initGraphClient() {
+        graphClient = GraphServiceClient.builder()
+            .authenticationProvider(request -> {
+                request.addHeader("Authorization", "Bearer " + accessToken);
+            })
+            .buildClient();
+    }
+    
+    /**
+     * Import all tasks from Microsoft To Do
+     */
+    public void importAllTasks(ImportCallback callback) {
+        if (graphClient == null) {
+            callback.onError("Not signed in");
+            return;
+        }
+        
+        new Thread(() -> {
+            try {
+                List<ImportedTask> allTasks = new ArrayList<>();
+                
+                // 1. Get all task lists
+                TodoTaskListCollectionPage listsPage = graphClient.me().todo().lists()
+                    .buildRequest()
+                    .get();
+                
+                List<TodoTaskList> lists = listsPage.getCurrentPage();
+                int totalLists = lists.size();
+                int current = 0;
+                
+                // 2. Get tasks from each list
+                for (TodoTaskList list : lists) {
+                    current++;
+                    callback.onProgress(current, totalLists);
+                    
+                    String listId = list.id;
+                    String listName = list.displayName;
+                    
+                    TodoTaskCollectionPage tasksPage = graphClient.me().todo()
+                        .lists(listId)
+                        .tasks()
+                        .buildRequest()
+                        .get();
+                    
+                    for (TodoTask task : tasksPage.getCurrentPage()) {
+                        ImportedTask importedTask = parseMicrosoftTask(task, listName);
+                        allTasks.add(importedTask);
+                    }
+                    
+                    // Handle pagination
+                    while (tasksPage.getNextPage() != null) {
+                        tasksPage = tasksPage.getNextPage().buildRequest().get();
+                        for (TodoTask task : tasksPage.getCurrentPage()) {
+                            ImportedTask importedTask = parseMicrosoftTask(task, listName);
+                            allTasks.add(importedTask);
+                        }
+                    }
+                }
+                
+                callback.onSuccess(allTasks);
+                
+            } catch (Exception e) {
+                Log.e(TAG, "Import failed", e);
+                callback.onError(e.getMessage());
+            }
+        }).start();
+    }
+    
+    private ImportedTask parseMicrosoftTask(TodoTask msTask, String folderName) {
+        ImportedTask task = new ImportedTask();
+        task.id = msTask.id;
+        task.title = msTask.title;
+        task.content = msTask.body != null ? msTask.body.content : "";
+        task.folderName = folderName;
+        task.completed = "completed".equals(msTask.status.name().toLowerCase());
+        task.priority = mapMicrosoftImportance(msTask.importance);
+        task.sourceApp = "Microsoft To Do";
+        
+        // Parse due date
+        if (msTask.dueDateTime != null) {
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US);
+                task.dueDate = sdf.parse(msTask.dueDateTime.dateTime);
+            } catch (Exception e) {
+                task.dueDate = null;
+            }
+        }
+        
+        // Parse reminder
+        if (msTask.reminderDateTime != null) {
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US);
+                task.reminderDate = sdf.parse(msTask.reminderDateTime.dateTime);
+            } catch (Exception e) {
+                task.reminderDate = null;
+            }
+        }
+        
+        // Check for recurrence
+        if (msTask.recurrence != null) {
+            task.isRecurring = true;
+        }
+        
+        return task;
+    }
+    
+    private int mapMicrosoftImportance(com.microsoft.graph.models.Importance importance) {
+        if (importance == null) return 0;
+        
+        switch (importance) {
+            case HIGH: return 3;
+            case NORMAL: return 1;
+            case LOW: return 0;
+            default: return 0;
+        }
+    }
+    
+    public void signOut() {
+        if (msalClient != null) {
+            msalClient.signOut(new ISingleAccountPublicClientApplication.SignOutCallback() {
+                @Override
+                public void onSignOut() {
+                    graphClient = null;
+                    accessToken = null;
+                }
+                
+                @Override
+                public void onError(MsalException exception) {
+                    Log.e(TAG, "Sign out failed", exception);
+                }
+            });
+        }
+    }
+}
+```
+
+#### MSAL Config File
+
+**Location:** `android/app/src/main/res/raw/msal_config.json`
+
+```json
+{
+  "client_id": "YOUR_MICROSOFT_CLIENT_ID",
+  "authorization_user_agent": "DEFAULT",
+  "redirect_uri": "msauth://nota.npd.com/callback",
+  "account_mode": "SINGLE",
+  "broker_redirect_uri_registered": false,
+  "authorities": [
+    {
+      "type": "AAD",
+      "audience": {
+        "type": "AzureADandPersonalMicrosoftAccount"
+      }
+    }
+  ]
+}
+```
+
+---
+
+### 16.6 Any.do Import
+
+Any.do doesn't have a public API, but users can export their data.
+
+#### Import via JSON Export
+
+1. In Any.do app, go to **Settings → Export Data**
+2. Select "JSON" format
+3. Download the file
+4. Import into NPD
+
+#### AnyDoImportManager.java
+
+**Location:** `android/app/src/main/java/nota/npd/com/imports/AnyDoImportManager.java`
+
+```java
+package nota.npd.com.imports;
+
+import android.content.Context;
+import android.net.Uri;
+import android.util.Log;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+
+/**
+ * AnyDoImportManager - Import tasks from Any.do export file
+ * 
+ * Any.do doesn't have a public API.
+ * Users must export their data as JSON from Any.do app.
+ */
+public class AnyDoImportManager {
+    
+    private static final String TAG = "AnyDoImport";
+    
+    private final Context context;
+    
+    public interface ImportCallback {
+        void onSuccess(List<ImportedTask> tasks);
+        void onError(String error);
+        void onProgress(int current, int total);
+    }
+    
+    public AnyDoImportManager(Context context) {
+        this.context = context;
+    }
+    
+    /**
+     * Import tasks from Any.do JSON export file
+     * 
+     * @param fileUri URI of the exported JSON file
+     */
+    public void importFromFile(Uri fileUri, ImportCallback callback) {
+        new Thread(() -> {
+            try {
+                // Read file content
+                InputStream inputStream = context.getContentResolver().openInputStream(fileUri);
+                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+                StringBuilder jsonBuilder = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    jsonBuilder.append(line);
+                }
+                reader.close();
+                
+                String jsonString = jsonBuilder.toString();
+                JSONObject root = new JSONObject(jsonString);
+                
+                List<ImportedTask> allTasks = new ArrayList<>();
+                
+                // Parse categories (folders)
+                JSONArray categories = root.optJSONArray("categories");
+                JSONArray tasks = root.optJSONArray("tasks");
+                
+                if (tasks == null) {
+                    callback.onError("No tasks found in file");
+                    return;
+                }
+                
+                int totalTasks = tasks.length();
+                
+                for (int i = 0; i < tasks.length(); i++) {
+                    callback.onProgress(i + 1, totalTasks);
+                    
+                    JSONObject task = tasks.getJSONObject(i);
+                    ImportedTask importedTask = parseAnyDoTask(task, categories);
+                    allTasks.add(importedTask);
+                }
+                
+                callback.onSuccess(allTasks);
+                
+            } catch (Exception e) {
+                Log.e(TAG, "Import failed", e);
+                callback.onError("Failed to parse file: " + e.getMessage());
+            }
+        }).start();
+    }
+    
+    private ImportedTask parseAnyDoTask(JSONObject json, JSONArray categories) throws Exception {
+        ImportedTask task = new ImportedTask();
+        task.id = json.optString("id", java.util.UUID.randomUUID().toString());
+        task.title = json.optString("title", "Untitled");
+        task.content = json.optString("note", "");
+        task.completed = json.optBoolean("done", false);
+        task.priority = mapAnyDoPriority(json.optString("priority"));
+        task.sourceApp = "Any.do";
+        
+        // Get folder name from category
+        String categoryId = json.optString("categoryId");
+        task.folderName = getCategoryName(categoryId, categories);
+        
+        // Parse due date
+        long dueTimestamp = json.optLong("dueDate", 0);
+        if (dueTimestamp > 0) {
+            task.dueDate = new Date(dueTimestamp);
+        }
+        
+        // Parse subtasks
+        JSONArray subtasks = json.optJSONArray("subTasks");
+        if (subtasks != null) {
+            task.subtasks = new ArrayList<>();
+            for (int i = 0; i < subtasks.length(); i++) {
+                JSONObject subtaskJson = subtasks.getJSONObject(i);
+                ImportedTask.Subtask subtask = new ImportedTask.Subtask();
+                subtask.title = subtaskJson.optString("title", "");
+                subtask.completed = subtaskJson.optBoolean("done", false);
+                task.subtasks.add(subtask);
+            }
+        }
+        
+        return task;
+    }
+    
+    private String getCategoryName(String categoryId, JSONArray categories) {
+        if (categories == null || categoryId == null) {
+            return "Inbox";
+        }
+        
+        try {
+            for (int i = 0; i < categories.length(); i++) {
+                JSONObject category = categories.getJSONObject(i);
+                if (categoryId.equals(category.optString("id"))) {
+                    return category.optString("name", "Inbox");
+                }
+            }
+        } catch (Exception e) {
+            // Ignore
+        }
+        
+        return "Inbox";
+    }
+    
+    private int mapAnyDoPriority(String priority) {
+        if (priority == null) return 0;
+        
+        switch (priority.toLowerCase()) {
+            case "high": return 3;
+            case "medium": return 2;
+            case "low": return 1;
+            default: return 0;
+        }
+    }
+}
+```
+
+---
+
+### 16.7 Common ImportedTask Model
+
+**Location:** `android/app/src/main/java/nota/npd/com/imports/ImportedTask.java`
+
+```java
+package nota.npd.com.imports;
+
+import java.util.Date;
+import java.util.List;
+
+/**
+ * Common model for imported tasks from any source app
+ */
+public class ImportedTask {
+    
+    public String id;
+    public String title;
+    public String content;
+    public String folderName;
+    public boolean completed;
+    public int priority; // 0=none, 1=low, 2=medium, 3=high
+    public Date dueDate;
+    public Date reminderDate;
+    public boolean isRecurring;
+    public String recurringString;
+    public String sourceApp;
+    public String parentId;
+    public List<Subtask> subtasks;
+    public List<String> tags;
+    
+    public static class Subtask {
+        public String title;
+        public boolean completed;
+    }
+    
+    /**
+     * Convert to NPD task format
+     */
+    public String toNPDTaskJson() {
+        StringBuilder json = new StringBuilder();
+        json.append("{");
+        json.append("\"id\":\"").append(id).append("\",");
+        json.append("\"text\":\"").append(escapeJson(title)).append("\",");
+        json.append("\"notes\":\"").append(escapeJson(content)).append("\",");
+        json.append("\"completed\":").append(completed).append(",");
+        json.append("\"priority\":").append(priority).append(",");
+        json.append("\"folder\":\"").append(escapeJson(folderName)).append("\",");
+        json.append("\"sourceApp\":\"").append(sourceApp).append("\"");
+        
+        if (dueDate != null) {
+            json.append(",\"dueDate\":").append(dueDate.getTime());
+        }
+        
+        if (reminderDate != null) {
+            json.append(",\"reminderDate\":").append(reminderDate.getTime());
+        }
+        
+        if (tags != null && !tags.isEmpty()) {
+            json.append(",\"tags\":[");
+            for (int i = 0; i < tags.size(); i++) {
+                if (i > 0) json.append(",");
+                json.append("\"").append(escapeJson(tags.get(i))).append("\"");
+            }
+            json.append("]");
+        }
+        
+        if (subtasks != null && !subtasks.isEmpty()) {
+            json.append(",\"subtasks\":[");
+            for (int i = 0; i < subtasks.size(); i++) {
+                if (i > 0) json.append(",");
+                Subtask st = subtasks.get(i);
+                json.append("{\"text\":\"").append(escapeJson(st.title)).append("\",");
+                json.append("\"completed\":").append(st.completed).append("}");
+            }
+            json.append("]");
+        }
+        
+        json.append("}");
+        return json.toString();
+    }
+    
+    private String escapeJson(String str) {
+        if (str == null) return "";
+        return str.replace("\\", "\\\\")
+                  .replace("\"", "\\\"")
+                  .replace("\n", "\\n")
+                  .replace("\r", "\\r")
+                  .replace("\t", "\\t");
+    }
+}
+```
+
+---
+
+### 16.8 TaskImportManager - Unified Import Handler
+
+**Location:** `android/app/src/main/java/nota/npd/com/imports/TaskImportManager.java`
+
+```java
+package nota.npd.com.imports;
+
+import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
+import android.util.Log;
+
+import java.util.List;
+
+/**
+ * TaskImportManager - Unified manager for importing tasks from various apps
+ */
+public class TaskImportManager {
+    
+    private static final String TAG = "TaskImportManager";
+    
+    public enum ImportSource {
+        TICKTICK,
+        TODOIST,
+        GOOGLE_TASKS,
+        MICROSOFT_TODO,
+        ANY_DO
+    }
+    
+    private final Context context;
+    
+    // Individual import managers
+    private TickTickImportManager tickTickManager;
+    private TodoistImportManager todoistManager;
+    private GoogleTasksImportManager googleTasksManager;
+    private MicrosoftTodoImportManager microsoftTodoManager;
+    private AnyDoImportManager anyDoManager;
+    
+    public interface ImportCallback {
+        void onSuccess(List<ImportedTask> tasks, ImportSource source);
+        void onError(String error, ImportSource source);
+        void onProgress(int current, int total, ImportSource source);
+        void onAuthRequired(ImportSource source, Intent authIntent);
+    }
+    
+    public TaskImportManager(Context context) {
+        this.context = context;
+        initManagers();
+    }
+    
+    private void initManagers() {
+        tickTickManager = new TickTickImportManager(context);
+        todoistManager = new TodoistImportManager(context);
+        googleTasksManager = new GoogleTasksImportManager(context);
+        microsoftTodoManager = new MicrosoftTodoImportManager(context);
+        anyDoManager = new AnyDoImportManager(context);
+    }
+    
+    /**
+     * Check if source is authenticated
+     */
+    public boolean isAuthenticated(ImportSource source) {
+        switch (source) {
+            case TICKTICK:
+                return tickTickManager.isAuthenticated();
+            case TODOIST:
+                return todoistManager.isAuthenticated();
+            case GOOGLE_TASKS:
+                return googleTasksManager.isSignedIn();
+            case MICROSOFT_TODO:
+                // Check via silent sign-in
+                return false; // Needs async check
+            case ANY_DO:
+                return true; // File-based, always available
+            default:
+                return false;
+        }
+    }
+    
+    /**
+     * Start import process for a source
+     */
+    public void startImport(ImportSource source, ImportCallback callback) {
+        switch (source) {
+            case TICKTICK:
+                importFromTickTick(callback);
+                break;
+            case TODOIST:
+                importFromTodoist(callback);
+                break;
+            case GOOGLE_TASKS:
+                importFromGoogleTasks(callback);
+                break;
+            case MICROSOFT_TODO:
+                importFromMicrosoftTodo(callback);
+                break;
+            case ANY_DO:
+                // Needs file URI, use importFromAnyDo(Uri, callback) instead
+                callback.onError("Use file picker for Any.do import", source);
+                break;
+        }
+    }
+    
+    private void importFromTickTick(ImportCallback callback) {
+        if (!tickTickManager.isAuthenticated()) {
+            // Need OAuth flow
+            String authUrl = tickTickManager.getAuthorizationUrl();
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(authUrl));
+            callback.onAuthRequired(ImportSource.TICKTICK, intent);
+            return;
+        }
+        
+        tickTickManager.importAllTasks(new TickTickImportManager.ImportCallback() {
+            @Override
+            public void onSuccess(List<ImportedTask> tasks) {
+                callback.onSuccess(tasks, ImportSource.TICKTICK);
+            }
+            
+            @Override
+            public void onError(String error) {
+                callback.onError(error, ImportSource.TICKTICK);
+            }
+            
+            @Override
+            public void onProgress(int current, int total) {
+                callback.onProgress(current, total, ImportSource.TICKTICK);
+            }
+        });
+    }
+    
+    private void importFromTodoist(ImportCallback callback) {
+        if (!todoistManager.isAuthenticated()) {
+            callback.onError("Please enter your Todoist API token first", ImportSource.TODOIST);
+            return;
+        }
+        
+        todoistManager.importAllTasks(new TodoistImportManager.ImportCallback() {
+            @Override
+            public void onSuccess(List<ImportedTask> tasks) {
+                callback.onSuccess(tasks, ImportSource.TODOIST);
+            }
+            
+            @Override
+            public void onError(String error) {
+                callback.onError(error, ImportSource.TODOIST);
+            }
+            
+            @Override
+            public void onProgress(int current, int total) {
+                callback.onProgress(current, total, ImportSource.TODOIST);
+            }
+        });
+    }
+    
+    private void importFromGoogleTasks(ImportCallback callback) {
+        googleTasksManager.signIn(new GoogleTasksImportManager.SignInCallback() {
+            @Override
+            public void onSignInRequired(Intent signInIntent) {
+                callback.onAuthRequired(ImportSource.GOOGLE_TASKS, signInIntent);
+            }
+            
+            @Override
+            public void onSignedIn() {
+                googleTasksManager.importAllTasks(new GoogleTasksImportManager.ImportCallback() {
+                    @Override
+                    public void onSuccess(List<ImportedTask> tasks) {
+                        callback.onSuccess(tasks, ImportSource.GOOGLE_TASKS);
+                    }
+                    
+                    @Override
+                    public void onError(String error) {
+                        callback.onError(error, ImportSource.GOOGLE_TASKS);
+                    }
+                    
+                    @Override
+                    public void onProgress(int current, int total) {
+                        callback.onProgress(current, total, ImportSource.GOOGLE_TASKS);
+                    }
+                });
+            }
+            
+            @Override
+            public void onError(String error) {
+                callback.onError(error, ImportSource.GOOGLE_TASKS);
+            }
+        });
+    }
+    
+    private void importFromMicrosoftTodo(ImportCallback callback) {
+        // Needs Activity for sign-in
+        callback.onError("Use signInMicrosoft() with Activity first", ImportSource.MICROSOFT_TODO);
+    }
+    
+    /**
+     * Sign in to Microsoft and import
+     */
+    public void signInAndImportMicrosoft(Activity activity, ImportCallback callback) {
+        microsoftTodoManager.signIn(activity, new MicrosoftTodoImportManager.SignInCallback() {
+            @Override
+            public void onSignInRequired() {
+                // Interactive sign-in will be triggered
+            }
+            
+            @Override
+            public void onSignedIn() {
+                microsoftTodoManager.importAllTasks(new MicrosoftTodoImportManager.ImportCallback() {
+                    @Override
+                    public void onSuccess(List<ImportedTask> tasks) {
+                        callback.onSuccess(tasks, ImportSource.MICROSOFT_TODO);
+                    }
+                    
+                    @Override
+                    public void onError(String error) {
+                        callback.onError(error, ImportSource.MICROSOFT_TODO);
+                    }
+                    
+                    @Override
+                    public void onProgress(int current, int total) {
+                        callback.onProgress(current, total, ImportSource.MICROSOFT_TODO);
+                    }
+                });
+            }
+            
+            @Override
+            public void onError(String error) {
+                callback.onError(error, ImportSource.MICROSOFT_TODO);
+            }
+        });
+    }
+    
+    /**
+     * Import from Any.do export file
+     */
+    public void importFromAnyDoFile(Uri fileUri, ImportCallback callback) {
+        anyDoManager.importFromFile(fileUri, new AnyDoImportManager.ImportCallback() {
+            @Override
+            public void onSuccess(List<ImportedTask> tasks) {
+                callback.onSuccess(tasks, ImportSource.ANY_DO);
+            }
+            
+            @Override
+            public void onError(String error) {
+                callback.onError(error, ImportSource.ANY_DO);
+            }
+            
+            @Override
+            public void onProgress(int current, int total) {
+                callback.onProgress(current, total, ImportSource.ANY_DO);
+            }
+        });
+    }
+    
+    /**
+     * Set Todoist API token
+     */
+    public void setTodoistApiToken(String token) {
+        todoistManager.setApiToken(token);
+    }
+    
+    /**
+     * Handle OAuth callback for TickTick
+     */
+    public void handleTickTickOAuthCallback(String authCode, ImportCallback callback) {
+        tickTickManager.exchangeCodeForToken(authCode, new TickTickImportManager.TokenCallback() {
+            @Override
+            public void onSuccess(String token) {
+                // Now import
+                importFromTickTick(callback);
+            }
+            
+            @Override
+            public void onError(String error) {
+                callback.onError(error, ImportSource.TICKTICK);
+            }
+        });
+    }
+    
+    /**
+     * Handle Google sign-in result
+     */
+    public void handleGoogleSignInResult(Intent data, ImportCallback callback) {
+        googleTasksManager.handleSignInResult(data, new GoogleTasksImportManager.SignInCallback() {
+            @Override
+            public void onSignInRequired(Intent signInIntent) {
+                callback.onAuthRequired(ImportSource.GOOGLE_TASKS, signInIntent);
+            }
+            
+            @Override
+            public void onSignedIn() {
+                importFromGoogleTasks(callback);
+            }
+            
+            @Override
+            public void onError(String error) {
+                callback.onError(error, ImportSource.GOOGLE_TASKS);
+            }
+        });
+    }
+}
+```
+
+---
+
+## 17. Import Feature - API Access Summary
+
+### 17.1 How to Get Each API
+
+| App | API Type | Where to Get | Cost |
+|-----|----------|--------------|------|
+| **TickTick** | OAuth 2.0 | [developer.ticktick.com](https://developer.ticktick.com/) | FREE |
+| **Todoist** | API Token or OAuth | [developer.todoist.com](https://developer.todoist.com/appconsole.html) | FREE |
+| **Google Tasks** | OAuth 2.0 | [console.cloud.google.com](https://console.cloud.google.com/) | FREE |
+| **Microsoft To Do** | OAuth 2.0 (MSAL) | [portal.azure.com](https://portal.azure.com/) | FREE |
+| **Any.do** | File Export | In-app export only | FREE |
+
+### 17.2 Required Files Summary
+
+| File | Location | Purpose |
+|------|----------|---------|
+| `ImportedTask.java` | `imports/` | Common task model |
+| `TaskImportManager.java` | `imports/` | Unified import handler |
+| `TickTickImportManager.java` | `imports/` | TickTick API integration |
+| `TodoistImportManager.java` | `imports/` | Todoist API integration |
+| `GoogleTasksImportManager.java` | `imports/` | Google Tasks API integration |
+| `MicrosoftTodoImportManager.java` | `imports/` | Microsoft Graph integration |
+| `AnyDoImportManager.java` | `imports/` | Any.do file import |
+| `msal_config.json` | `res/raw/` | Microsoft auth config |
+
+### 17.3 Dependencies to Add
+
+Add to `android/app/build.gradle`:
+
+```gradle
+dependencies {
+    // ... existing dependencies ...
+    
+    // Google Tasks API
+    implementation 'com.google.apis:google-api-services-tasks:v1-rev20230401-2.0.0'
+    
+    // Microsoft Graph & MSAL
+    implementation 'com.microsoft.identity.client:msal:4.9.0'
+    implementation 'com.microsoft.graph:microsoft-graph:5.77.0'
+}
+```
+
+### 17.4 Updated Project Structure
+
+```
+android/app/src/main/java/nota/npd/com/
+├── MainActivity.java
+├── sync/
+│   ├── CloudSyncManager.java
+│   ├── SyncWorker.java
+│   ├── SyncService.java
+│   └── BootReceiver.java
+├── calendar/
+│   ├── GoogleCalendarHelper.java
+│   └── CalendarSyncManager.java
+├── integrations/
+│   ├── IntegrationManager.java
+│   ├── BaseIntegration.java
+│   ├── ClickUpIntegration.java
+│   ├── NotionIntegration.java
+│   └── HubSpotIntegration.java
+└── imports/                           ← NEW
+    ├── ImportedTask.java
+    ├── TaskImportManager.java
+    ├── TickTickImportManager.java
+    ├── TodoistImportManager.java
+    ├── GoogleTasksImportManager.java
+    ├── MicrosoftTodoImportManager.java
+    └── AnyDoImportManager.java
+```
+
+---
+
+## 18. Quick Reference - All Integrations Pricing
+
+| Service | Free Tier | Paid Required For |
+|---------|-----------|-------------------|
+| **Firebase** | ✅ Generous | High usage (50K+ reads/day) |
+| **Google Calendar** | ✅ FREE | Nothing (always free) |
+| **Google Tasks** | ✅ FREE | Nothing (always free) |
+| **ClickUp** | ✅ FREE Forever | Advanced features |
+| **Notion** | ✅ FREE | Team features |
+| **HubSpot** | ✅ FREE CRM | Marketing/Sales Hub |
+| **TickTick** | ✅ FREE | Premium features |
+| **Todoist** | ✅ FREE | Premium features |
+| **Microsoft To Do** | ✅ FREE | Nothing (always free) |
+| **Any.do** | ✅ FREE | Premium features |
+
+> **Bottom Line:** All integrations are FREE for basic use! Users don't need to pay for API access.
+
+---
+
 **Package Name:** `nota.npd.com`
 
 **Last Updated:** January 2026
