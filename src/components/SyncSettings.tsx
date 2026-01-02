@@ -3,6 +3,12 @@ import { Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { useSyncBridge } from "@/hooks/useSyncBridge";
 
 // Import logos
@@ -127,7 +133,7 @@ const SyncSettings = () => {
     );
   }
 
-  const buttonStyles = "w-full h-12 justify-start gap-3 border border-border bg-background hover:bg-muted/50 text-foreground font-medium";
+  const connectButtonStyles = "w-full h-12 justify-start gap-3 border border-border bg-background hover:bg-muted/50 text-foreground font-medium rounded-xl";
 
   return (
     <div className="space-y-6 p-4 max-w-2xl mx-auto">
@@ -154,7 +160,7 @@ const SyncSettings = () => {
         <CardContent>
           <Button 
             variant="outline" 
-            className={buttonStyles}
+            className={connectButtonStyles}
             onClick={() => handleConnect("Google Calendar")}
             disabled={isLoading["Google Calendar"]}
           >
@@ -183,51 +189,83 @@ const SyncSettings = () => {
           <CardTitle className="text-lg">Integrations</CardTitle>
           <CardDescription>Connect with ClickUp, Notion, and HubSpot</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
-          {/* ClickUp */}
-          <Button 
-            variant="outline" 
-            className={buttonStyles}
-            onClick={() => handleConnect("ClickUp")}
-            disabled={isLoading["ClickUp"]}
-          >
-            {isLoading["ClickUp"] ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <img src={logoClickUp} alt="ClickUp" className="h-5 w-5 rounded" />
-            )}
-            Continue ClickUp Account
-          </Button>
+        <CardContent>
+          <Accordion type="single" collapsible className="w-full">
+            {/* ClickUp */}
+            <AccordionItem value="clickup" className="border-b">
+              <AccordionTrigger className="hover:no-underline py-4">
+                <div className="flex items-center gap-3">
+                  <img src={logoClickUp} alt="ClickUp" className="w-8 h-8 rounded-lg" />
+                  <span className="font-medium">ClickUp</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="pt-2 pb-4">
+                <Button 
+                  variant="outline" 
+                  className={connectButtonStyles}
+                  onClick={() => handleConnect("ClickUp")}
+                  disabled={isLoading["ClickUp"]}
+                >
+                  {isLoading["ClickUp"] ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <img src={logoClickUp} alt="ClickUp" className="h-5 w-5 rounded" />
+                  )}
+                  Continue ClickUp Account
+                </Button>
+              </AccordionContent>
+            </AccordionItem>
 
-          {/* Notion */}
-          <Button 
-            variant="outline" 
-            className={buttonStyles}
-            onClick={() => handleConnect("Notion")}
-            disabled={isLoading["Notion"]}
-          >
-            {isLoading["Notion"] ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <img src={logoNotion} alt="Notion" className="h-5 w-5 rounded" />
-            )}
-            Continue Notion Account
-          </Button>
+            {/* Notion */}
+            <AccordionItem value="notion" className="border-b">
+              <AccordionTrigger className="hover:no-underline py-4">
+                <div className="flex items-center gap-3">
+                  <img src={logoNotion} alt="Notion" className="w-8 h-8 rounded-lg" />
+                  <span className="font-medium">Notion</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="pt-2 pb-4">
+                <Button 
+                  variant="outline" 
+                  className={connectButtonStyles}
+                  onClick={() => handleConnect("Notion")}
+                  disabled={isLoading["Notion"]}
+                >
+                  {isLoading["Notion"] ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <img src={logoNotion} alt="Notion" className="h-5 w-5 rounded" />
+                  )}
+                  Continue Notion Account
+                </Button>
+              </AccordionContent>
+            </AccordionItem>
 
-          {/* HubSpot */}
-          <Button 
-            variant="outline" 
-            className={buttonStyles}
-            onClick={() => handleConnect("HubSpot")}
-            disabled={isLoading["HubSpot"]}
-          >
-            {isLoading["HubSpot"] ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <img src={logoHubSpot} alt="HubSpot" className="h-5 w-5 rounded" />
-            )}
-            Continue HubSpot Account
-          </Button>
+            {/* HubSpot */}
+            <AccordionItem value="hubspot" className="border-b-0">
+              <AccordionTrigger className="hover:no-underline py-4">
+                <div className="flex items-center gap-3">
+                  <img src={logoHubSpot} alt="HubSpot" className="w-8 h-8 rounded-lg" />
+                  <span className="font-medium">HubSpot</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="pt-2 pb-4">
+                <Button 
+                  variant="outline" 
+                  className={connectButtonStyles}
+                  onClick={() => handleConnect("HubSpot")}
+                  disabled={isLoading["HubSpot"]}
+                >
+                  {isLoading["HubSpot"] ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <img src={logoHubSpot} alt="HubSpot" className="h-5 w-5 rounded" />
+                  )}
+                  Continue HubSpot Account
+                </Button>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </CardContent>
       </Card>
 
@@ -237,51 +275,83 @@ const SyncSettings = () => {
           <CardTitle className="text-lg">Import Tasks</CardTitle>
           <CardDescription>Import tasks from other apps</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
-          {/* TickTick */}
-          <Button 
-            variant="outline" 
-            className={buttonStyles}
-            onClick={() => handleConnect("TickTick")}
-            disabled={isLoading["TickTick"]}
-          >
-            {isLoading["TickTick"] ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <img src={logoTickTick} alt="TickTick" className="h-5 w-5 rounded" />
-            )}
-            Import from TickTick
-          </Button>
+        <CardContent>
+          <Accordion type="single" collapsible className="w-full">
+            {/* TickTick */}
+            <AccordionItem value="ticktick" className="border-b">
+              <AccordionTrigger className="hover:no-underline py-4">
+                <div className="flex items-center gap-3">
+                  <img src={logoTickTick} alt="TickTick" className="w-8 h-8 rounded-lg" />
+                  <span className="font-medium">TickTick</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="pt-2 pb-4">
+                <Button 
+                  variant="outline" 
+                  className={connectButtonStyles}
+                  onClick={() => handleConnect("TickTick")}
+                  disabled={isLoading["TickTick"]}
+                >
+                  {isLoading["TickTick"] ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <img src={logoTickTick} alt="TickTick" className="h-5 w-5 rounded" />
+                  )}
+                  Import from TickTick
+                </Button>
+              </AccordionContent>
+            </AccordionItem>
 
-          {/* Todoist */}
-          <Button 
-            variant="outline" 
-            className={buttonStyles}
-            onClick={() => handleConnect("Todoist")}
-            disabled={isLoading["Todoist"]}
-          >
-            {isLoading["Todoist"] ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <img src={logoTodoist} alt="Todoist" className="h-5 w-5 rounded" />
-            )}
-            Import from Todoist
-          </Button>
+            {/* Todoist */}
+            <AccordionItem value="todoist" className="border-b">
+              <AccordionTrigger className="hover:no-underline py-4">
+                <div className="flex items-center gap-3">
+                  <img src={logoTodoist} alt="Todoist" className="w-8 h-8 rounded-lg" />
+                  <span className="font-medium">Todoist</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="pt-2 pb-4">
+                <Button 
+                  variant="outline" 
+                  className={connectButtonStyles}
+                  onClick={() => handleConnect("Todoist")}
+                  disabled={isLoading["Todoist"]}
+                >
+                  {isLoading["Todoist"] ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <img src={logoTodoist} alt="Todoist" className="h-5 w-5 rounded" />
+                  )}
+                  Import from Todoist
+                </Button>
+              </AccordionContent>
+            </AccordionItem>
 
-          {/* Evernote */}
-          <Button 
-            variant="outline" 
-            className={buttonStyles}
-            onClick={() => handleConnect("Evernote")}
-            disabled={isLoading["Evernote"]}
-          >
-            {isLoading["Evernote"] ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <img src={logoEvernote} alt="Evernote" className="h-5 w-5 rounded" />
-            )}
-            Import from Evernote
-          </Button>
+            {/* Evernote */}
+            <AccordionItem value="evernote" className="border-b-0">
+              <AccordionTrigger className="hover:no-underline py-4">
+                <div className="flex items-center gap-3">
+                  <img src={logoEvernote} alt="Evernote" className="w-8 h-8 rounded-lg" />
+                  <span className="font-medium">Evernote</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="pt-2 pb-4">
+                <Button 
+                  variant="outline" 
+                  className={connectButtonStyles}
+                  onClick={() => handleConnect("Evernote")}
+                  disabled={isLoading["Evernote"]}
+                >
+                  {isLoading["Evernote"] ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <img src={logoEvernote} alt="Evernote" className="h-5 w-5 rounded" />
+                  )}
+                  Import from Evernote
+                </Button>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </CardContent>
       </Card>
     </div>
