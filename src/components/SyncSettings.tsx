@@ -344,9 +344,16 @@ const SyncSettings = () => {
       {/* Integrations Section */}
       <Card>
         <CardHeader>
-          <div>
-            <CardTitle className="text-lg">Integrations</CardTitle>
-            <CardDescription>Connect with ClickUp, Notion, and HubSpot</CardDescription>
+          <div className="w-full space-y-3">
+            <div>
+              <CardTitle className="text-lg">Integrations</CardTitle>
+              <CardDescription>Connect with ClickUp, Notion, and HubSpot</CardDescription>
+            </div>
+            <div className="bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+              <p className="text-sm text-amber-700 dark:text-amber-300 font-medium">
+                Sync Features Coming Soon
+              </p>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
