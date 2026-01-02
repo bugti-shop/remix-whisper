@@ -272,17 +272,6 @@ const SyncSettings = () => {
     setIsLoading(prev => ({ ...prev, [`save_${service}`]: false }));
   };
 
-  const renderConnectionStatus = (status: ConnectionStatus) => {
-    return (
-      <span 
-        className={`text-xs font-medium ml-2 ${
-          status.connected ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'
-        }`}
-      >
-        {status.connected ? 'Connected' : 'Not Connected'}
-      </span>
-    );
-  };
 
   if (bridgeLoading) {
     return (
@@ -365,7 +354,6 @@ const SyncSettings = () => {
                   <div className="flex items-center gap-3">
                     <img src={logoClickUp} alt="ClickUp" className="w-8 h-8 rounded-lg" />
                     <span>ClickUp</span>
-                    {renderConnectionStatus(settings.integrations.clickup)}
                   </div>
                 </div>
               </AccordionTrigger>
@@ -418,7 +406,6 @@ const SyncSettings = () => {
                   <div className="flex items-center gap-3">
                     <img src={logoNotion} alt="Notion" className="w-8 h-8 rounded-lg" />
                     <span>Notion</span>
-                    {renderConnectionStatus(settings.integrations.notion)}
                   </div>
                 </div>
               </AccordionTrigger>
@@ -471,7 +458,6 @@ const SyncSettings = () => {
                   <div className="flex items-center gap-3">
                     <img src={logoHubSpot} alt="HubSpot" className="w-8 h-8 rounded-lg" />
                     <span>HubSpot</span>
-                    {renderConnectionStatus(settings.integrations.hubspot)}
                   </div>
                 </div>
               </AccordionTrigger>
@@ -537,7 +523,6 @@ const SyncSettings = () => {
                   <div className="flex items-center gap-3">
                     <img src={logoTickTick} alt="TickTick" className="w-8 h-8 rounded-lg" />
                     <span>TickTick</span>
-                    {renderConnectionStatus(settings.imports.ticktick)}
                   </div>
                 </div>
               </AccordionTrigger>
@@ -590,7 +575,6 @@ const SyncSettings = () => {
                   <div className="flex items-center gap-3">
                     <img src={logoTodoist} alt="Todoist" className="w-8 h-8 rounded-lg" />
                     <span>Todoist</span>
-                    {renderConnectionStatus(settings.imports.todoist)}
                   </div>
                 </div>
               </AccordionTrigger>
