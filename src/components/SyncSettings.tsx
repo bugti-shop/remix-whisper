@@ -272,19 +272,13 @@ const SyncSettings = () => {
     setIsLoading(prev => ({ ...prev, [`save_${service}`]: false }));
   };
 
-  const renderConnectionBadge = (status: ConnectionStatus) => {
-    if (status.connected) {
-      return (
-        <Badge variant="default" className="bg-green-500/20 text-green-600 border-green-500/30">
-          <Check className="h-3 w-3 mr-1" />
-          Connected
-        </Badge>
-      );
-    }
+  const renderConnectionDot = (status: ConnectionStatus) => {
     return (
-      <Badge variant="secondary" className="text-muted-foreground">
-        Not connected
-      </Badge>
+      <div 
+        className={`w-2.5 h-2.5 rounded-full ${
+          status.connected ? 'bg-green-500' : 'bg-red-500'
+        }`} 
+      />
     );
   };
 
@@ -298,18 +292,6 @@ const SyncSettings = () => {
 
   return (
     <div className="space-y-6 p-4 max-w-2xl mx-auto">
-      {/* Native App Banner */}
-      {!isNative && (
-        <Card className="border-primary/20 bg-primary/5">
-          <CardContent className="flex items-center gap-3 py-4">
-            <Smartphone className="h-5 w-5 text-primary" />
-            <div className="flex-1">
-              <p className="text-sm font-medium">Some features require the native app</p>
-              <p className="text-xs text-muted-foreground">OAuth connections and imports work best on mobile</p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Last Sync Time */}
       {lastSyncTime && (
@@ -360,14 +342,9 @@ const SyncSettings = () => {
       {/* Integrations Section */}
       <Card>
         <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-purple-500/10">
-              <Link2 className="h-5 w-5 text-purple-500" />
-            </div>
-            <div>
-              <CardTitle className="text-lg">Integrations</CardTitle>
-              <CardDescription>Connect with ClickUp, Notion, and HubSpot</CardDescription>
-            </div>
+          <div>
+            <CardTitle className="text-lg">Integrations</CardTitle>
+            <CardDescription>Connect with ClickUp, Notion, and HubSpot</CardDescription>
           </div>
         </CardHeader>
         <CardContent>
@@ -379,8 +356,8 @@ const SyncSettings = () => {
                   <div className="flex items-center gap-3">
                     <img src={logoClickUp} alt="ClickUp" className="w-8 h-8 rounded-lg" />
                     <span>ClickUp</span>
+                    {renderConnectionDot(settings.integrations.clickup)}
                   </div>
-                  {renderConnectionBadge(settings.integrations.clickup)}
                 </div>
               </AccordionTrigger>
               <AccordionContent className="space-y-4 pt-4">
@@ -432,8 +409,8 @@ const SyncSettings = () => {
                   <div className="flex items-center gap-3">
                     <img src={logoNotion} alt="Notion" className="w-8 h-8 rounded-lg" />
                     <span>Notion</span>
+                    {renderConnectionDot(settings.integrations.notion)}
                   </div>
-                  {renderConnectionBadge(settings.integrations.notion)}
                 </div>
               </AccordionTrigger>
               <AccordionContent className="space-y-4 pt-4">
@@ -485,8 +462,8 @@ const SyncSettings = () => {
                   <div className="flex items-center gap-3">
                     <img src={logoHubSpot} alt="HubSpot" className="w-8 h-8 rounded-lg" />
                     <span>HubSpot</span>
+                    {renderConnectionDot(settings.integrations.hubspot)}
                   </div>
-                  {renderConnectionBadge(settings.integrations.hubspot)}
                 </div>
               </AccordionTrigger>
               <AccordionContent className="space-y-4 pt-4">
@@ -537,14 +514,9 @@ const SyncSettings = () => {
       {/* Task Import Section - Only TickTick and Todoist */}
       <Card>
         <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-green-500/10">
-              <Import className="h-5 w-5 text-green-500" />
-            </div>
-            <div>
-              <CardTitle className="text-lg">Import Tasks</CardTitle>
-              <CardDescription>Import tasks from other apps</CardDescription>
-            </div>
+          <div>
+            <CardTitle className="text-lg">Import Tasks</CardTitle>
+            <CardDescription>Import tasks from other apps</CardDescription>
           </div>
         </CardHeader>
         <CardContent>
@@ -556,8 +528,8 @@ const SyncSettings = () => {
                   <div className="flex items-center gap-3">
                     <img src={logoTickTick} alt="TickTick" className="w-8 h-8 rounded-lg" />
                     <span>TickTick</span>
+                    {renderConnectionDot(settings.imports.ticktick)}
                   </div>
-                  {renderConnectionBadge(settings.imports.ticktick)}
                 </div>
               </AccordionTrigger>
               <AccordionContent className="space-y-4 pt-4">
@@ -609,8 +581,8 @@ const SyncSettings = () => {
                   <div className="flex items-center gap-3">
                     <img src={logoTodoist} alt="Todoist" className="w-8 h-8 rounded-lg" />
                     <span>Todoist</span>
+                    {renderConnectionDot(settings.imports.todoist)}
                   </div>
-                  {renderConnectionBadge(settings.imports.todoist)}
                 </div>
               </AccordionTrigger>
               <AccordionContent className="space-y-4 pt-4">

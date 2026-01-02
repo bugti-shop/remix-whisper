@@ -1,5 +1,5 @@
 import { BottomNavigation } from '@/components/BottomNavigation';
-import { ChevronRight, Settings as SettingsIcon, Crown, CreditCard, Palette, Check, Clock, Vibrate, Cloud } from 'lucide-react';
+import { ChevronRight, Settings as SettingsIcon, Crown, CreditCard, Palette, Check, Clock, Vibrate, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -264,17 +264,16 @@ const Settings = () => {
             </button>
           </div>
 
-          {/* Sync & Integrations */}
+          {/* Integrations & Import */}
           <div className="space-y-1">
-            <div className="flex items-center gap-2 px-4 py-3">
-              <Cloud className="h-4 w-4 text-muted-foreground" />
-              <span className="text-muted-foreground text-sm font-medium">Sync & Integrations</span>
-            </div>
             <button
               onClick={() => navigate('/settings/sync')}
               className="w-full flex items-center justify-between px-4 py-3 border-b border-border hover:bg-muted transition-colors"
             >
-              <span className="text-foreground text-sm">Cloud Sync & Imports</span>
+              <div className="flex items-center gap-3">
+                <ExternalLink className="h-5 w-5 text-emerald-500" />
+                <span className="text-foreground text-sm">Integrations & Import</span>
+              </div>
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </button>
           </div>
