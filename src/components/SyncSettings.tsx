@@ -275,7 +275,7 @@ const SyncSettings = () => {
   const renderConnectionStatus = (status: ConnectionStatus) => {
     return (
       <span 
-        className={`text-xs font-medium ${
+        className={`text-xs font-medium ml-2 ${
           status.connected ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'
         }`}
       >
