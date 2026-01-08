@@ -3,7 +3,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Search, Replace, ChevronUp, ChevronDown, X } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Search, Replace, ChevronUp, ChevronDown, X, CaseSensitive, WholeWord } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface FindReplaceSheetProps {
@@ -28,6 +29,8 @@ export const FindReplaceSheet = ({
   const [replaceTerm, setReplaceTerm] = useState('');
   const [matchCount, setMatchCount] = useState(0);
   const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
+  const [matchCase, setMatchCase] = useState(false);
+  const [wholeWord, setWholeWord] = useState(false);
   const originalContentRef = useRef<string>('');
 
   // Store original content when opening
@@ -62,6 +65,33 @@ export const FindReplaceSheet = ({
     }
   }, [editorRef]);
 
+  // Escape special regex characters
+  const escapeRegex = (str: string) => {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  };
+
+  // Build regex pattern based on options
+  const buildSearchRegex = useCallback((term: string, forMatch: boolean = false) => {
+    if (!term.trim()) return null;
+    
+    let pattern = escapeRegex(term);
+    
+    // Add word boundary if whole word is enabled
+    if (wholeWord) {
+      pattern = `\\b${pattern}\\b`;
+    }
+    
+    // Build flags
+    const flags = forMatch ? 'g' : 'gi';
+    const finalFlags = matchCase ? flags.replace('i', '') : flags;
+    
+    try {
+      return new RegExp(forMatch ? `(${pattern})` : pattern, finalFlags);
+    } catch {
+      return null;
+    }
+  }, [matchCase, wholeWord]);
+
   // Highlight all matches in the editor
   const highlightMatches = useCallback(() => {
     if (!editorRef.current || !searchTerm.trim()) {
@@ -73,7 +103,12 @@ export const FindReplaceSheet = ({
     // First clear existing highlights
     clearHighlights();
 
-    const searchRegex = new RegExp(`(${escapeRegex(searchTerm)})`, 'gi');
+    const searchRegex = buildSearchRegex(searchTerm, true);
+    if (!searchRegex) {
+      setMatchCount(0);
+      return;
+    }
+
     let count = 0;
 
     const walker = document.createTreeWalker(
@@ -94,17 +129,24 @@ export const FindReplaceSheet = ({
 
     textNodes.forEach((textNode) => {
       const text = textNode.textContent || '';
-      const matches = text.match(new RegExp(escapeRegex(searchTerm), 'gi'));
-      if (matches) {
-        count += matches.length;
+      const countRegex = buildSearchRegex(searchTerm, false);
+      if (countRegex) {
+        const matches = text.match(new RegExp(countRegex.source, countRegex.flags + (countRegex.flags.includes('g') ? '' : 'g')));
+        if (matches) {
+          count += matches.length;
+        }
       }
 
       const fragment = document.createDocumentFragment();
       let lastIndex = 0;
       let match: RegExpExecArray | null;
-      const regex = new RegExp(escapeRegex(searchTerm), 'gi');
+      const regex = buildSearchRegex(searchTerm, false);
+      if (!regex) return;
+      
+      // Ensure global flag for exec loop
+      const globalRegex = new RegExp(regex.source, regex.flags.includes('g') ? regex.flags : regex.flags + 'g');
 
-      while ((match = regex.exec(text)) !== null) {
+      while ((match = globalRegex.exec(text)) !== null) {
         // Add text before match
         if (match.index > lastIndex) {
           fragment.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
@@ -120,7 +162,7 @@ export const FindReplaceSheet = ({
         mark.textContent = match[0];
         fragment.appendChild(mark);
 
-        lastIndex = regex.lastIndex;
+        lastIndex = globalRegex.lastIndex;
       }
 
       // Add remaining text
@@ -138,12 +180,7 @@ export const FindReplaceSheet = ({
     if (count > 0) {
       scrollToMatch(0);
     }
-  }, [searchTerm, editorRef, clearHighlights]);
-
-  // Escape special regex characters
-  const escapeRegex = (str: string) => {
-    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  };
+  }, [searchTerm, editorRef, clearHighlights, buildSearchRegex]);
 
   // Scroll to a specific match
   const scrollToMatch = useCallback((index: number) => {
@@ -155,6 +192,7 @@ export const FindReplaceSheet = ({
     // Reset all highlights
     highlights.forEach((mark) => {
       (mark as HTMLElement).style.backgroundColor = HIGHLIGHT_BG_COLOR;
+      (mark as HTMLElement).style.color = HIGHLIGHT_COLOR;
       (mark as HTMLElement).style.outline = 'none';
     });
 
@@ -219,8 +257,12 @@ export const FindReplaceSheet = ({
 
     // Get the content and replace all occurrences
     const currentContent = editorRef.current.innerHTML;
-    const searchRegex = new RegExp(escapeRegex(searchTerm), 'gi');
-    const newContent = currentContent.replace(searchRegex, replaceTerm);
+    const searchRegex = buildSearchRegex(searchTerm, false);
+    if (!searchRegex) return;
+    
+    // Ensure global flag
+    const globalRegex = new RegExp(searchRegex.source, searchRegex.flags.includes('g') ? searchRegex.flags : searchRegex.flags + 'g');
+    const newContent = currentContent.replace(globalRegex, replaceTerm);
 
     editorRef.current.innerHTML = newContent;
     onContentChange(newContent);
@@ -230,20 +272,20 @@ export const FindReplaceSheet = ({
     setCurrentMatchIndex(0);
 
     toast.success(`Replaced ${replacedCount} occurrence${replacedCount !== 1 ? 's' : ''}`);
-  }, [editorRef, matchCount, searchTerm, replaceTerm, onContentChange, clearHighlights]);
+  }, [editorRef, matchCount, searchTerm, replaceTerm, onContentChange, clearHighlights, buildSearchRegex]);
 
-  // Debounced search
+  // Debounced search - re-run when options change
   useEffect(() => {
     const timer = setTimeout(() => {
       highlightMatches();
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [searchTerm, highlightMatches]);
+  }, [searchTerm, matchCase, wholeWord, highlightMatches]);
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <SheetContent side="bottom" className="h-auto max-h-[60vh] rounded-t-2xl">
+      <SheetContent side="bottom" className="h-auto max-h-[70vh] rounded-t-2xl">
         <SheetHeader className="pb-4">
           <SheetTitle className="flex items-center gap-2">
             <Search className="h-5 w-5" style={{ color: HIGHLIGHT_COLOR }} />
@@ -252,6 +294,32 @@ export const FindReplaceSheet = ({
         </SheetHeader>
 
         <div className="space-y-4">
+          {/* Search Options */}
+          <div className="flex items-center gap-4 p-3 rounded-lg bg-muted/50">
+            <div className="flex items-center gap-2">
+              <Switch
+                id="match-case"
+                checked={matchCase}
+                onCheckedChange={setMatchCase}
+              />
+              <Label htmlFor="match-case" className="text-sm flex items-center gap-1.5 cursor-pointer">
+                <CaseSensitive className="h-4 w-4" />
+                Match Case
+              </Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch
+                id="whole-word"
+                checked={wholeWord}
+                onCheckedChange={setWholeWord}
+              />
+              <Label htmlFor="whole-word" className="text-sm flex items-center gap-1.5 cursor-pointer">
+                <WholeWord className="h-4 w-4" />
+                Whole Word
+              </Label>
+            </div>
+          </div>
+
           {/* Search Input */}
           <div className="space-y-2">
             <Label className="text-sm font-medium" style={{ color: HIGHLIGHT_COLOR }}>
@@ -296,6 +364,11 @@ export const FindReplaceSheet = ({
                 ) : (
                   <span>
                     Found <strong style={{ color: HIGHLIGHT_COLOR }}>{matchCount}</strong> match{matchCount !== 1 ? 'es' : ''}
+                    {(matchCase || wholeWord) && (
+                      <span className="text-xs ml-2">
+                        ({matchCase && 'case-sensitive'}{matchCase && wholeWord && ', '}{wholeWord && 'whole word'})
+                      </span>
+                    )}
                   </span>
                 )}
               </p>
