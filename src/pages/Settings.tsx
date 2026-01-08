@@ -1,5 +1,5 @@
 import { BottomNavigation } from '@/components/BottomNavigation';
-import { ChevronRight, Settings as SettingsIcon, Crown, CreditCard, Palette, Check, Clock, Vibrate, ExternalLink } from 'lucide-react';
+import { ChevronRight, Settings as SettingsIcon, Crown, CreditCard, Palette, Check, Clock, Vibrate, ExternalLink, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -8,6 +8,8 @@ import { useRevenueCat } from '@/contexts/RevenueCatContext';
 import { Capacitor } from '@capacitor/core';
 import { useDarkMode, themes, ThemeId } from '@/hooks/useDarkMode';
 import { differenceInDays, differenceInHours, differenceInMinutes, addDays } from 'date-fns';
+import { Note } from '@/types/note';
+import { HiddenNotesSection } from '@/components/HiddenNotesSection';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,6 +45,20 @@ const Settings = () => {
     return (localStorage.getItem('haptic_intensity') as 'off' | 'light' | 'medium' | 'heavy') || 'medium';
   });
   const [isRestoring, setIsRestoring] = useState(false);
+  const [notes, setNotes] = useState<Note[]>([]);
+
+  // Load notes for hidden notes section
+  useEffect(() => {
+    const saved = localStorage.getItem('notes');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      setNotes(parsed.map((n: Note) => ({
+        ...n,
+        createdAt: new Date(n.createdAt),
+        updatedAt: new Date(n.updatedAt),
+      })));
+    }
+  }, []);
 
   // Check for admin bypass
   const hasAdminAccess = localStorage.getItem('npd_admin_bypass') === 'true';
@@ -276,6 +292,34 @@ const Settings = () => {
               </div>
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </button>
+          </div>
+
+          {/* Hidden Notes Section */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 px-4 py-3">
+              <Lock className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground text-sm font-medium">Privacy</span>
+            </div>
+            <HiddenNotesSection
+              notes={notes}
+              onEditNote={(note) => navigate(`/?editNote=${note.id}`)}
+              onUnhideNote={(noteId) => {
+                const updatedNotes = notes.map((n) =>
+                  n.id === noteId ? { ...n, isHidden: false } : n
+                );
+                setNotes(updatedNotes);
+                localStorage.setItem('notes', JSON.stringify(updatedNotes));
+                toast({ title: 'Note unhidden' });
+              }}
+              onDeleteNote={(noteId) => {
+                const updatedNotes = notes.map((n) =>
+                  n.id === noteId ? { ...n, isDeleted: true, deletedAt: new Date() } : n
+                );
+                setNotes(updatedNotes);
+                localStorage.setItem('notes', JSON.stringify(updatedNotes));
+                toast({ title: 'Note moved to trash' });
+              }}
+            />
           </div>
 
           {/* Settings Items */}

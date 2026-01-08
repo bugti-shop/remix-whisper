@@ -146,6 +146,9 @@ export interface Note {
   archivedAt?: Date;
   isDeleted?: boolean;
   deletedAt?: Date;
+  // Hidden/Protected note properties
+  isHidden?: boolean;
+  isProtected?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

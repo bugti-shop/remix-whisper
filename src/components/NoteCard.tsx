@@ -2,13 +2,15 @@ import { useState, useRef } from 'react';
 import { Note } from '@/types/note';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Trash2, Edit, Mic, FileText, Pen, Pin, FileCode, GitBranch, AlignLeft, Archive, Star, Check, Copy } from 'lucide-react';
+import { Trash2, Edit, Mic, FileText, Pen, Pin, FileCode, GitBranch, AlignLeft, Archive, Star, Check, Copy, EyeOff, Shield, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { getNoteProtection } from '@/utils/noteProtection';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
@@ -29,6 +31,9 @@ interface NoteCardProps {
   onToggleSelection?: (noteId: string) => void;
   // Duplicate
   onDuplicate?: (noteId: string) => void;
+  // Hide/Protect
+  onHide?: (noteId: string) => void;
+  onProtect?: (noteId: string) => void;
 }
 
 const STICKY_COLORS = {
@@ -52,7 +57,7 @@ const RANDOM_COLORS = [
   'hsl(60, 90%, 75%)',
 ];
 
-export const NoteCard = ({ note, onEdit, onDelete, onArchive, onTogglePin, onToggleFavorite, onDragStart, onDragOver, onDrop, onDragEnd, isSelectionMode = false, isSelected = false, onToggleSelection, onDuplicate }: NoteCardProps) => {
+export const NoteCard = ({ note, onEdit, onDelete, onArchive, onTogglePin, onToggleFavorite, onDragStart, onDragOver, onDrop, onDragEnd, isSelectionMode = false, isSelected = false, onToggleSelection, onDuplicate, onHide, onProtect }: NoteCardProps) => {
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [isSwiping, setIsSwiping] = useState(false);
@@ -66,7 +71,7 @@ export const NoteCard = ({ note, onEdit, onDelete, onArchive, onTogglePin, onTog
   const isSketch = note.type === 'sketch';
   const isMindMap = note.type === 'mindmap';
   const isCode = note.type === 'code';
-
+  const noteProtection = getNoteProtection(note.id);
   const SWIPE_THRESHOLD = 80;
 
   const getHapticStyle = () => {
@@ -281,6 +286,9 @@ export const NoteCard = ({ note, onEdit, onDelete, onArchive, onTogglePin, onTog
             {note.isFavorite && (
               <Star className="h-4 w-4 text-yellow-500 fill-yellow-500 shrink-0" />
             )}
+            {(noteProtection.hasPassword || noteProtection.useBiometric) && (
+              <Lock className="h-4 w-4 text-primary shrink-0" />
+            )}
           </div>
 
           {note.content && (
@@ -341,6 +349,20 @@ export const NoteCard = ({ note, onEdit, onDelete, onArchive, onTogglePin, onTog
               Duplicate
             </DropdownMenuItem>
           )}
+          <DropdownMenuSeparator />
+          {onHide && (
+            <DropdownMenuItem onClick={() => { setShowContextMenu(false); onHide(note.id); }} className="gap-2">
+              <EyeOff className="h-4 w-4" />
+              Hide Note
+            </DropdownMenuItem>
+          )}
+          {onProtect && (
+            <DropdownMenuItem onClick={() => { setShowContextMenu(false); onProtect(note.id); }} className="gap-2">
+              <Shield className="h-4 w-4" />
+              {noteProtection.hasPassword || noteProtection.useBiometric ? 'Change Protection' : 'Protect Note'}
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => { setShowContextMenu(false); onDelete(note.id); }} className="gap-2 text-destructive">
             <Trash2 className="h-4 w-4" />
             Move to Trash
