@@ -370,6 +370,8 @@ export class NotificationManager {
               sound: undefined,
               attachments: undefined,
               actionTypeId: SNOOZE_ACTION_TYPE_ID,
+              smallIcon: 'npd_notification_icon',
+              largeIcon: 'npd_notification_icon',
               extra: {
                 taskId: task.id,
                 type: 'task',
@@ -391,6 +393,8 @@ export class NotificationManager {
             sound: undefined,
             attachments: undefined,
             actionTypeId: SNOOZE_ACTION_TYPE_ID,
+            smallIcon: 'npd_notification_icon',
+            largeIcon: 'npd_notification_icon',
             extra: {
               taskId: task.id,
               type: 'task',

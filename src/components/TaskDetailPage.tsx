@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { TodoItem, Priority, Folder, Note, RepeatType, ColoredTag, TimeTracking } from '@/types/note';
+import { TodoItem, Priority, Folder, Note, RepeatType, ColoredTag, TimeTracking, KanbanStatus } from '@/types/note';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -25,7 +25,8 @@ import {
   Image as ImageIcon,
   MapPin,
   Link,
-  Clock
+  Clock,
+  Columns
 } from 'lucide-react';
 import { LocationMapPreview } from './LocationMapPreview';
 import { cn } from '@/lib/utils';
@@ -703,6 +704,57 @@ export const TaskDetailPage = ({
                 : 'Not set'}
             </span>
           </button>
+
+          {/* Kanban Status */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="w-full flex items-center gap-3 py-3 hover:bg-muted/50 rounded-lg px-2 transition-colors">
+                <Columns className="h-5 w-5 text-purple-500" />
+                <span className="flex-1 text-left">Kanban Status</span>
+                <span className="text-sm text-muted-foreground capitalize">
+                  {task.kanbanStatus || 'To Do'}
+                </span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 bg-popover border shadow-lg z-[60]">
+              <DropdownMenuItem 
+                onClick={async () => {
+                  try { await Haptics.impact({ style: ImpactStyle.Light }); } catch {}
+                  onUpdate({ ...task, kanbanStatus: 'todo', completed: false });
+                  toast.success('Status set to To Do');
+                }}
+                className={cn("cursor-pointer", (!task.kanbanStatus || task.kanbanStatus === 'todo') && "bg-accent")}
+              >
+                <div className="w-3 h-3 rounded-full bg-slate-500 mr-2" />
+                To Do
+                {(!task.kanbanStatus || task.kanbanStatus === 'todo') && <Check className="h-4 w-4 ml-auto" />}
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={async () => {
+                  try { await Haptics.impact({ style: ImpactStyle.Light }); } catch {}
+                  onUpdate({ ...task, kanbanStatus: 'in-progress', completed: false });
+                  toast.success('Status set to In Progress');
+                }}
+                className={cn("cursor-pointer", task.kanbanStatus === 'in-progress' && "bg-accent")}
+              >
+                <div className="w-3 h-3 rounded-full bg-blue-500 mr-2" />
+                In Progress
+                {task.kanbanStatus === 'in-progress' && <Check className="h-4 w-4 ml-auto" />}
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={async () => {
+                  try { await Haptics.impact({ style: ImpactStyle.Light }); } catch {}
+                  onUpdate({ ...task, kanbanStatus: 'done', completed: true });
+                  toast.success('Status set to Done');
+                }}
+                className={cn("cursor-pointer", task.kanbanStatus === 'done' && "bg-accent")}
+              >
+                <div className="w-3 h-3 rounded-full bg-green-500 mr-2" />
+                Done
+                {task.kanbanStatus === 'done' && <Check className="h-4 w-4 ml-auto" />}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* Convert to Notes */}
           <button 
