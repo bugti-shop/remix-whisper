@@ -863,6 +863,86 @@ export const RichTextEditor = ({
           >
             <ImageIcon className="h-4 w-4" />
           </Button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                title="Align Image"
+              >
+                <AlignCenter className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2">
+              <div className="flex gap-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    const selectedImage = document.querySelector('.resizable-image-wrapper[style*="outline"]') as HTMLElement;
+                    if (selectedImage) {
+                      selectedImage.style.display = 'block';
+                      selectedImage.style.marginLeft = '0';
+                      selectedImage.style.marginRight = 'auto';
+                      handleInput();
+                      toast.success('Image aligned left');
+                    } else {
+                      toast.error('Please select an image first');
+                    }
+                  }}
+                  className="h-8 w-8 p-0"
+                  title="Align Left"
+                >
+                  <AlignLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    const selectedImage = document.querySelector('.resizable-image-wrapper[style*="outline"]') as HTMLElement;
+                    if (selectedImage) {
+                      selectedImage.style.display = 'block';
+                      selectedImage.style.marginLeft = 'auto';
+                      selectedImage.style.marginRight = 'auto';
+                      handleInput();
+                      toast.success('Image aligned center');
+                    } else {
+                      toast.error('Please select an image first');
+                    }
+                  }}
+                  className="h-8 w-8 p-0"
+                  title="Align Center"
+                >
+                  <AlignCenter className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    const selectedImage = document.querySelector('.resizable-image-wrapper[style*="outline"]') as HTMLElement;
+                    if (selectedImage) {
+                      selectedImage.style.display = 'block';
+                      selectedImage.style.marginLeft = 'auto';
+                      selectedImage.style.marginRight = '0';
+                      handleInput();
+                      toast.success('Image aligned right');
+                    } else {
+                      toast.error('Please select an image first');
+                    }
+                  }}
+                  className="h-8 w-8 p-0"
+                  title="Align Right"
+                >
+                  <AlignRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
           <input
             ref={fileInputRef}
             type="file"

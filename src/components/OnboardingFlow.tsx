@@ -241,7 +241,7 @@ export default function OnboardingFlow({
 
 
   const handleContinue = () => {
-    triggerHaptic('medium');
+    triggerHaptic('heavy');
     if (step < 33) {
       setSwipeDirection('left');
       setStep(step + 1);
@@ -249,7 +249,7 @@ export default function OnboardingFlow({
   };
 
   const handleBack = () => {
-    triggerHaptic('light');
+    triggerHaptic('heavy');
     if (step === 1) {
       setShowWelcome(true);
     } else if (step > 1) {
@@ -498,12 +498,12 @@ export default function OnboardingFlow({
             </div>
           ) : (
             <div className="flex gap-3">
-              <button onClick={() => { triggerHaptic('medium'); setPlan('monthly'); }} className={`border rounded-xl p-4 w-36 text-center ${plan === 'monthly' ? 'border-primary bg-gray-50' : 'border-gray-200'}`}>
+              <button onClick={() => { triggerHaptic('heavy'); setPlan('monthly'); }} className={`border rounded-xl p-4 w-36 text-center ${plan === 'monthly' ? 'border-primary bg-gray-50' : 'border-gray-200'}`}>
                 <p className="font-semibold">Monthly</p>
                 <p className="text-gray-600 text-sm">{monthlyPrice}</p>
               </button>
 
-              <button onClick={() => { triggerHaptic('medium'); setPlan('yearly'); }} className={`border-2 rounded-xl p-4 w-36 text-center relative flex flex-col items-center justify-center ${plan === 'yearly' ? 'border-primary' : 'border-gray-200'}`}>
+              <button onClick={() => { triggerHaptic('heavy'); setPlan('yearly'); }} className={`border-2 rounded-xl p-4 w-36 text-center relative flex flex-col items-center justify-center ${plan === 'yearly' ? 'border-primary' : 'border-gray-200'}`}>
                 <span className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full absolute left-1/2 -translate-x-1/2 -top-2 whitespace-nowrap">
                   {trialDays} DAYS FREE
                 </span>
