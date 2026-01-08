@@ -1,15 +1,10 @@
 import { Home, FileText, Calendar, Settings } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
-const triggerHaptic = async () => {
-  try {
-    await Haptics.impact({ style: ImpactStyle.Light });
-  } catch (error) {
-    // Haptics not available in browser
-    console.log('Haptics not available');
-  }
+const triggerNavHaptic = async () => {
+  await triggerHaptic('heavy');
 };
 
 export const BottomNavigation = () => {
@@ -40,7 +35,7 @@ export const BottomNavigation = () => {
             <Link
               key={item.path}
               to={item.path}
-              onClick={triggerHaptic}
+              onClick={triggerNavHaptic}
               className={cn(
                 "flex flex-col items-center justify-center gap-0.5 transition-colors min-w-0 px-0.5 touch-target",
                 isActive ? "text-primary" : "text-muted-foreground"

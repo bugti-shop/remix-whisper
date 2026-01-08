@@ -209,7 +209,7 @@ export const TaskInputSheet = ({ isOpen, onClose, onAddTask, folders, selectedFo
     if (!taskText.trim() && !voiceRecording) return;
 
     try {
-      await Haptics.impact({ style: ImpactStyle.Light });
+      await Haptics.impact({ style: ImpactStyle.Heavy });
     } catch {}
 
     // Use natural language parsing to extract date/time/priority/repeat/location/tags/folder from text
@@ -353,7 +353,7 @@ export const TaskInputSheet = ({ isOpen, onClose, onAddTask, folders, selectedFo
       }, 1000);
 
       try {
-        await Haptics.impact({ style: ImpactStyle.Light });
+        await Haptics.impact({ style: ImpactStyle.Heavy });
       } catch {}
     } catch (error) {
       toast.error('Failed to access microphone');
@@ -372,7 +372,7 @@ export const TaskInputSheet = ({ isOpen, onClose, onAddTask, folders, selectedFo
         cancelAnimationFrame(animationFrameRef.current);
       }
       try {
-        await Haptics.impact({ style: ImpactStyle.Medium });
+        await Haptics.impact({ style: ImpactStyle.Heavy });
       } catch {}
     }
   };

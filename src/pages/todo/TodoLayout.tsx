@@ -9,15 +9,7 @@ import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 import { syncManager } from '@/utils/syncManager';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import appLogo from '@/assets/app-logo.png';
-
-const triggerHaptics = async () => {
-  try {
-    const { Haptics, ImpactStyle } = await import('@capacitor/haptics');
-    await Haptics.impact({ style: ImpactStyle.Light });
-  } catch (error) {
-    // Haptics not available
-  }
-};
+import { triggerHaptic } from '@/utils/haptics';
 
 interface TodoLayoutProps {
   children: ReactNode;
@@ -67,7 +59,7 @@ export const TodoLayout = ({ children, title }: TodoLayoutProps) => {
                 size="icon"
                 variant="ghost"
                 onClick={async () => {
-                  await triggerHaptics();
+                  await triggerHaptic('heavy');
                   navigate('/');
                 }}
                 className="h-8 w-8 sm:h-9 sm:w-9 hover:bg-transparent active:bg-transparent"

@@ -50,7 +50,7 @@ const Upcoming = () => {
 
   const handleAddTask = async (task: Omit<TodoItem, 'id' | 'completed'>) => {
     const newItem: TodoItem = { id: Date.now().toString(), completed: false, ...task };
-    if (newItem.reminderTime) {
+    if (newItem.dueDate || newItem.reminderTime) {
       try { await notificationManager.scheduleTaskReminder(newItem); } catch (error) { console.error('Failed to schedule notification:', error); }
     }
     const allItems = await loadTodoItems();
@@ -79,7 +79,7 @@ const Upcoming = () => {
   };
 
   const duplicateTask = async (task: TodoItem) => {
-    try { await Haptics.impact({ style: ImpactStyle.Light }); } catch {}
+    try { await Haptics.impact({ style: ImpactStyle.Heavy }); } catch {}
     const duplicatedTask: TodoItem = { ...task, id: Date.now().toString(), completed: false, text: `${task.text} (Copy)` };
     const allItems = await loadTodoItems();
     allItems.unshift(duplicatedTask);
@@ -89,7 +89,7 @@ const Upcoming = () => {
 
   const handleDragEnd = async (result: DropResult) => {
     if (!result.destination) return;
-    try { await Haptics.impact({ style: ImpactStyle.Light }); } catch {}
+    try { await Haptics.impact({ style: ImpactStyle.Heavy }); } catch {}
     const reorderedItems = Array.from(items);
     const [movedItem] = reorderedItems.splice(result.source.index, 1);
     reorderedItems.splice(result.destination.index, 0, movedItem);
@@ -199,7 +199,7 @@ const Upcoming = () => {
         </div>
       </main>
 
-      <Button onClick={async () => { try { await Haptics.impact({ style: ImpactStyle.Medium }); } catch {} setIsInputOpen(true); }} className="fixed bottom-20 left-4 right-4 z-30 h-12 text-base font-semibold" size="lg">
+      <Button onClick={async () => { try { await Haptics.impact({ style: ImpactStyle.Heavy }); } catch {} setIsInputOpen(true); }} className="fixed bottom-20 left-4 right-4 z-30 h-12 text-base font-semibold" size="lg">
         <Plus className="h-5 w-5" />Add Task
       </Button>
 
