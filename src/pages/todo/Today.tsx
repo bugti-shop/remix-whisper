@@ -37,8 +37,9 @@ import { loadTodoItems, saveTodoItems, resolveTaskMediaUrl } from '@/utils/todoI
 import { ResolvedTaskImage } from '@/components/ResolvedTaskImage';
 import { useResolvedTaskMedia } from '@/hooks/useResolvedTaskMedia';
 import { ResolvedImageDialog } from '@/components/ResolvedImageDialog';
+import { KanbanBoard } from '@/components/KanbanBoard';
 
-type ViewMode = 'card' | 'flat';
+type ViewMode = 'card' | 'flat' | 'kanban';
 type SortBy = 'date' | 'priority' | 'name' | 'created';
 
 const defaultSections: TaskSection[] = [
@@ -1198,9 +1199,15 @@ const Today = () => {
                           <DropdownMenuItem onClick={() => { setIsSelectionMode(true); setIsSelectActionsOpen(true); }} className="cursor-pointer">
                             <MousePointer2 className="h-4 w-4 mr-2" />Select
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setViewMode(viewMode === 'card' ? 'flat' : 'card')} className="cursor-pointer">
-                            {viewMode === 'card' ? <LayoutList className="h-4 w-4 mr-2" /> : <LayoutGrid className="h-4 w-4 mr-2" />}
-                            {viewMode === 'card' ? 'Flat Layout' : 'Card Layout'}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => setViewMode('card')} className={cn("cursor-pointer", viewMode === 'card' && "bg-accent")}>
+                            <LayoutGrid className="h-4 w-4 mr-2" />Card Layout
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setViewMode('flat')} className={cn("cursor-pointer", viewMode === 'flat' && "bg-accent")}>
+                            <LayoutList className="h-4 w-4 mr-2" />Flat Layout
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setViewMode('kanban')} className={cn("cursor-pointer", viewMode === 'kanban' && "bg-accent")}>
+                            <LayoutGrid className="h-4 w-4 mr-2 rotate-90" />Kanban Board
                           </DropdownMenuItem>
                         </>
                       )}
@@ -1298,6 +1305,16 @@ const Today = () => {
           {/* Tasks by Sections */}
           {processedItems.length === 0 ? (
             <div className="text-center py-20"><p className="text-muted-foreground">No tasks yet. Tap "Add Task" to get started!</p></div>
+          ) : viewMode === 'kanban' ? (
+            <KanbanBoard
+              items={processedItems}
+              onItemClick={(item) => setSelectedTask(item)}
+              onUpdateItem={updateItem}
+              onReorder={handleUnifiedReorder}
+              isSelectionMode={isSelectionMode}
+              selectedTaskIds={selectedTaskIds}
+              onSelectTask={handleSelectTask}
+            />
           ) : (
             <div className="space-y-4">
               {/* Render sections with unified drag-drop */}

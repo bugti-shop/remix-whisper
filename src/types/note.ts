@@ -13,6 +13,7 @@ export interface ExpenseEntry {
 
 export type Priority = 'high' | 'medium' | 'low' | 'none';
 export type RepeatType = 'none' | 'daily' | 'weekly' | 'weekdays' | 'weekends' | 'monthly' | 'custom';
+export type KanbanStatus = 'todo' | 'in-progress' | 'done';
 
 export interface AdvancedRepeatPattern {
   frequency: RepeatType;
@@ -66,6 +67,7 @@ export interface TodoItem {
   voiceRecording?: VoiceRecording;
   dependsOn?: string[]; // IDs of tasks that must be completed first
   timeTracking?: TimeTracking;
+  kanbanStatus?: KanbanStatus;
 }
 
 export interface TaskTemplate {

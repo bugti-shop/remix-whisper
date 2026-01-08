@@ -361,41 +361,228 @@ export const RichTextEditor = ({
       reader.onloadend = () => {
         const imageUrl = reader.result as string;
 
-        // Insert image at cursor position
+        // Insert image at cursor position with resizable wrapper
         if (editorRef.current) {
           editorRef.current.focus();
 
+          // Create a wrapper div for the resizable image
+          const wrapper = document.createElement('div');
+          wrapper.className = 'resizable-image-wrapper';
+          wrapper.contentEditable = 'false';
+          wrapper.style.display = 'inline-block';
+          wrapper.style.position = 'relative';
+          wrapper.style.margin = '10px 0';
+          wrapper.style.cursor = 'move';
+          wrapper.setAttribute('data-image-width', '300');
+          wrapper.setAttribute('data-image-x', '0');
+          wrapper.setAttribute('data-image-y', '0');
+
           const img = document.createElement('img');
           img.src = imageUrl;
-          img.style.maxWidth = '60%';
+          img.style.width = '300px';
           img.style.height = 'auto';
           img.style.display = 'block';
-          img.style.margin = '10px 0';
           img.style.borderRadius = '8px';
+          img.style.pointerEvents = 'none';
+          img.draggable = false;
+
+          // Create resize handle
+          const resizeHandle = document.createElement('div');
+          resizeHandle.className = 'image-resize-handle';
+          resizeHandle.style.position = 'absolute';
+          resizeHandle.style.bottom = '-4px';
+          resizeHandle.style.right = '-4px';
+          resizeHandle.style.width = '16px';
+          resizeHandle.style.height = '16px';
+          resizeHandle.style.backgroundColor = 'hsl(var(--primary))';
+          resizeHandle.style.borderRadius = '50%';
+          resizeHandle.style.cursor = 'se-resize';
+          resizeHandle.style.display = 'none';
+          resizeHandle.style.zIndex = '10';
+
+          // Create move handle
+          const moveHandle = document.createElement('div');
+          moveHandle.className = 'image-move-handle';
+          moveHandle.style.position = 'absolute';
+          moveHandle.style.top = '-4px';
+          moveHandle.style.left = '-4px';
+          moveHandle.style.width = '16px';
+          moveHandle.style.height = '16px';
+          moveHandle.style.backgroundColor = 'hsl(var(--primary))';
+          moveHandle.style.borderRadius = '50%';
+          moveHandle.style.cursor = 'grab';
+          moveHandle.style.display = 'none';
+          moveHandle.style.zIndex = '10';
+
+          wrapper.appendChild(img);
+          wrapper.appendChild(resizeHandle);
+          wrapper.appendChild(moveHandle);
+
+          // Show handles on click
+          wrapper.addEventListener('click', (e) => {
+            e.stopPropagation();
+            // Hide all other handles
+            document.querySelectorAll('.resizable-image-wrapper').forEach(w => {
+              const handles = w.querySelectorAll('.image-resize-handle, .image-move-handle');
+              handles.forEach(h => (h as HTMLElement).style.display = 'none');
+              (w as HTMLElement).style.outline = 'none';
+            });
+            // Show this wrapper's handles
+            resizeHandle.style.display = 'block';
+            moveHandle.style.display = 'block';
+            wrapper.style.outline = '2px solid hsl(var(--primary))';
+            wrapper.style.outlineOffset = '2px';
+          });
+
+          // Resize functionality
+          let isResizing = false;
+          let startX = 0;
+          let startWidth = 0;
+
+          resizeHandle.addEventListener('mousedown', (e) => {
+            e.stopPropagation();
+            isResizing = true;
+            startX = e.clientX;
+            startWidth = img.offsetWidth;
+            document.addEventListener('mousemove', onResizeMove);
+            document.addEventListener('mouseup', onResizeEnd);
+          });
+
+          resizeHandle.addEventListener('touchstart', (e) => {
+            e.stopPropagation();
+            isResizing = true;
+            startX = e.touches[0].clientX;
+            startWidth = img.offsetWidth;
+            document.addEventListener('touchmove', onResizeTouchMove);
+            document.addEventListener('touchend', onResizeEnd);
+          });
+
+          const onResizeMove = (e: MouseEvent) => {
+            if (!isResizing) return;
+            const deltaX = e.clientX - startX;
+            const newWidth = Math.max(50, Math.min(800, startWidth + deltaX));
+            img.style.width = `${newWidth}px`;
+            wrapper.setAttribute('data-image-width', String(newWidth));
+          };
+
+          const onResizeTouchMove = (e: TouchEvent) => {
+            if (!isResizing) return;
+            const deltaX = e.touches[0].clientX - startX;
+            const newWidth = Math.max(50, Math.min(800, startWidth + deltaX));
+            img.style.width = `${newWidth}px`;
+            wrapper.setAttribute('data-image-width', String(newWidth));
+          };
+
+          const onResizeEnd = () => {
+            isResizing = false;
+            document.removeEventListener('mousemove', onResizeMove);
+            document.removeEventListener('mouseup', onResizeEnd);
+            document.removeEventListener('touchmove', onResizeTouchMove);
+            document.removeEventListener('touchend', onResizeEnd);
+            handleInput();
+          };
+
+          // Move functionality
+          let isDragging = false;
+          let dragStartX = 0;
+          let dragStartY = 0;
+          let initialX = 0;
+          let initialY = 0;
+
+          moveHandle.addEventListener('mousedown', (e) => {
+            e.stopPropagation();
+            isDragging = true;
+            dragStartX = e.clientX;
+            dragStartY = e.clientY;
+            initialX = parseInt(wrapper.getAttribute('data-image-x') || '0');
+            initialY = parseInt(wrapper.getAttribute('data-image-y') || '0');
+            moveHandle.style.cursor = 'grabbing';
+            document.addEventListener('mousemove', onDragMove);
+            document.addEventListener('mouseup', onDragEnd);
+          });
+
+          moveHandle.addEventListener('touchstart', (e) => {
+            e.stopPropagation();
+            isDragging = true;
+            dragStartX = e.touches[0].clientX;
+            dragStartY = e.touches[0].clientY;
+            initialX = parseInt(wrapper.getAttribute('data-image-x') || '0');
+            initialY = parseInt(wrapper.getAttribute('data-image-y') || '0');
+            document.addEventListener('touchmove', onDragTouchMove);
+            document.addEventListener('touchend', onDragEnd);
+          });
+
+          const onDragMove = (e: MouseEvent) => {
+            if (!isDragging) return;
+            const deltaX = e.clientX - dragStartX;
+            const deltaY = e.clientY - dragStartY;
+            const newX = initialX + deltaX;
+            const newY = initialY + deltaY;
+            wrapper.style.transform = `translate(${newX}px, ${newY}px)`;
+            wrapper.setAttribute('data-image-x', String(newX));
+            wrapper.setAttribute('data-image-y', String(newY));
+          };
+
+          const onDragTouchMove = (e: TouchEvent) => {
+            if (!isDragging) return;
+            const deltaX = e.touches[0].clientX - dragStartX;
+            const deltaY = e.touches[0].clientY - dragStartY;
+            const newX = initialX + deltaX;
+            const newY = initialY + deltaY;
+            wrapper.style.transform = `translate(${newX}px, ${newY}px)`;
+            wrapper.setAttribute('data-image-x', String(newX));
+            wrapper.setAttribute('data-image-y', String(newY));
+          };
+
+          const onDragEnd = () => {
+            isDragging = false;
+            moveHandle.style.cursor = 'grab';
+            document.removeEventListener('mousemove', onDragMove);
+            document.removeEventListener('mouseup', onDragEnd);
+            document.removeEventListener('touchmove', onDragTouchMove);
+            document.removeEventListener('touchend', onDragEnd);
+            handleInput();
+          };
 
           const selection = window.getSelection();
           if (selection && selection.rangeCount > 0) {
             const range = selection.getRangeAt(0);
             range.deleteContents();
-            range.insertNode(img);
+            range.insertNode(wrapper);
 
             // Move cursor after image
-            range.setStartAfter(img);
+            range.setStartAfter(wrapper);
             range.collapse(true);
             selection.removeAllRanges();
             selection.addRange(range);
           } else {
-            editorRef.current.appendChild(img);
+            editorRef.current.appendChild(wrapper);
           }
 
           // Trigger onChange to save content
           handleInput();
-          toast.success('Image added');
+          toast.success('Image added - click to resize or move');
         }
       };
       reader.readAsDataURL(file);
     }
   };
+
+  // Click outside to deselect images
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.resizable-image-wrapper')) {
+        document.querySelectorAll('.resizable-image-wrapper').forEach(w => {
+          const handles = w.querySelectorAll('.image-resize-handle, .image-move-handle');
+          handles.forEach(h => (h as HTMLElement).style.display = 'none');
+          (w as HTMLElement).style.outline = 'none';
+        });
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
 
   const handleInput = () => {
     try {
