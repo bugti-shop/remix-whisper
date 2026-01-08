@@ -327,10 +327,21 @@ const Index = () => {
     setDraggedNoteId(null);
   };
 
+  const handleHideNote = (noteId: string) => {
+    setNotes(prev => prev.map(n => n.id === noteId ? { ...n, isHidden: true } : n));
+  };
+
+  const handleProtectNote = (noteId: string) => {
+    // Protection is handled via NoteProtectionSheet - this just triggers the dialog
+    // For now, we'll store a flag that the note needs protection UI
+    console.log('Protect note:', noteId);
+  };
+
   let allFilteredNotes = notes.filter(
     (note) =>
       !note.isDeleted && 
       !note.isArchived &&
+      !note.isHidden && // Hide hidden notes from main view
       (note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       note.content.toLowerCase().includes(searchQuery.toLowerCase()))
   );
