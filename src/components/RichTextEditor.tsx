@@ -7,6 +7,7 @@ import {
   Link as LinkIcon,
   Image as ImageIcon,
   List,
+  ListOrdered,
   Palette,
   Highlighter,
   Undo,
@@ -67,6 +68,7 @@ interface RichTextEditorProps {
   lineHeight?: string;
   onLineHeightChange?: (lineHeight: string) => void;
   onInsertNoteLink?: () => void;
+  externalEditorRef?: React.RefObject<HTMLDivElement>;
 }
 
 const COLORS = [
@@ -289,8 +291,10 @@ export const RichTextEditor = ({
   lineHeight = LINE_HEIGHTS[1].value,
   onLineHeightChange,
   onInsertNoteLink,
+  externalEditorRef,
 }: RichTextEditorProps) => {
-  const editorRef = useRef<HTMLDivElement>(null);
+  const internalEditorRef = useRef<HTMLDivElement>(null);
+  const editorRef = externalEditorRef || internalEditorRef;
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -332,6 +336,7 @@ export const RichTextEditor = ({
   const handleItalic = () => execCommand('italic');
   const handleUnderline = () => execCommand('underline');
   const handleBulletList = () => execCommand('insertUnorderedList');
+  const handleNumberedList = () => execCommand('insertOrderedList');
 
   const handleTextColor = (color: string) => {
     execCommand('foreColor', color);
@@ -944,6 +949,16 @@ export const RichTextEditor = ({
       >
         <List className="h-4 w-4" />
       </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={handleNumberedList}
+        className="h-8 w-8 p-0"
+        title="Numbered List"
+      >
+        <ListOrdered className="h-4 w-4" />
+      </Button>
 
       <Popover>
         <PopoverTrigger asChild>
@@ -1395,6 +1410,10 @@ export const RichTextEditor = ({
           }
           .rich-text-editor ul {
             list-style: disc;
+            padding-left: 2rem;
+          }
+          .rich-text-editor ol {
+            list-style: decimal;
             padding-left: 2rem;
           }
           /* Ensure smooth mobile scrolling inside the editor */

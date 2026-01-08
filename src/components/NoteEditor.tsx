@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RichTextEditor } from './RichTextEditor';
+import { FindReplaceSheet } from './FindReplaceSheet';
 import { VoiceRecorder } from './VoiceRecorder';
 import { SketchEditor } from './SketchEditor';
 import { VirtualizedCodeEditor } from './VirtualizedCodeEditor';
@@ -18,7 +19,7 @@ import { NoteTableOfContents, injectHeadingIds } from './NoteTableOfContents';
 import { useHardwareBackButton } from '@/hooks/useHardwareBackButton';
 
 import { ErrorBoundary } from './ErrorBoundary';
-import { ArrowLeft, Folder as FolderIcon, Plus, CalendarIcon, History, FileDown, Link2, ChevronDown, FileText, BookOpen, BarChart3, MoreVertical, Mic, Share2 } from 'lucide-react';
+import { ArrowLeft, Folder as FolderIcon, Plus, CalendarIcon, History, FileDown, Link2, ChevronDown, FileText, BookOpen, BarChart3, MoreVertical, Mic, Share2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Calendar } from '@/components/ui/calendar';
@@ -132,6 +133,8 @@ export const NoteEditor = ({ note, isOpen, onClose, onSave, defaultType = 'regul
   const [isBacklinksOpen, setIsBacklinksOpen] = useState(true);
   const [isReadingMode, setIsReadingMode] = useState(false);
   const [showStats, setShowStats] = useState(false);
+  const [isFindReplaceOpen, setIsFindReplaceOpen] = useState(false);
+  const editorRef = useRef<HTMLDivElement>(null);
   
   // Calculate stats
   const noteStats = calculateNoteStats(content, title);
@@ -581,6 +584,10 @@ export const NoteEditor = ({ note, isOpen, onClose, onSave, defaultType = 'regul
                   <BookOpen className="h-4 w-4 mr-2" />
                   {isReadingMode ? 'Exit' : 'Enter'} Reading Mode
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setIsFindReplaceOpen(true)}>
+                  <Search className="h-4 w-4 mr-2" />
+                  Find & Replace
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 
                 {/* Created & Modified Dates */}
@@ -768,6 +775,7 @@ export const NoteEditor = ({ note, isOpen, onClose, onSave, defaultType = 'regul
               lineHeight={lineHeight}
               onLineHeightChange={setLineHeight}
               onInsertNoteLink={() => setIsNoteLinkingOpen(true)}
+              externalEditorRef={editorRef}
             />
           )}
         </ErrorBoundary>
@@ -851,6 +859,15 @@ export const NoteEditor = ({ note, isOpen, onClose, onSave, defaultType = 'regul
         notes={allNotes}
         currentNoteId={note?.id}
         onSelectNote={handleInsertNoteLink}
+      />
+
+      {/* Find & Replace Sheet */}
+      <FindReplaceSheet
+        isOpen={isFindReplaceOpen}
+        onClose={() => setIsFindReplaceOpen(false)}
+        content={content}
+        onContentChange={setContent}
+        editorRef={editorRef}
       />
     </div>
   );
