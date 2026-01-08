@@ -717,20 +717,28 @@ export const NoteEditor = ({ note, isOpen, onClose, onSave, defaultType = 'regul
           ) : noteType === 'sketch' ? (
             <SketchEditor content={content} onChange={setContent} />
           ) : isReadingMode ? (
-            <div className="flex-1 overflow-y-auto p-4">
-              {title && (
-                <h1 
-                  className="text-2xl font-bold mb-4"
-                  style={{ fontFamily }}
-                >
-                  {title}
-                </h1>
-              )}
-              <div 
-                className="prose prose-sm max-w-none dark:prose-invert"
-                style={{ fontFamily, fontSize, fontWeight, lineHeight }}
-                dangerouslySetInnerHTML={{ __html: content }}
-              />
+            <div 
+              className="h-full overflow-y-auto overscroll-contain"
+              style={{ 
+                WebkitOverflowScrolling: 'touch',
+                minHeight: 0,
+              }}
+            >
+              <div className="p-4 pb-20">
+                {title && (
+                  <h1 
+                    className="text-2xl font-bold mb-4"
+                    style={{ fontFamily }}
+                  >
+                    {title}
+                  </h1>
+                )}
+                <div 
+                  className="prose prose-sm max-w-none dark:prose-invert"
+                  style={{ fontFamily, fontSize, fontWeight, lineHeight }}
+                  dangerouslySetInnerHTML={{ __html: content }}
+                />
+              </div>
             </div>
           ) : (
             <RichTextEditor

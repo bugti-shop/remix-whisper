@@ -20,6 +20,8 @@ import {
   Link2,
   Table,
   Star,
+  Paperclip,
+  FileIcon,
 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
@@ -82,6 +84,13 @@ const HIGHLIGHT_COLORS = [
   { name: 'Blue', value: '#BFDBFE' },
   { name: 'Pink', value: '#FBCFE8' },
   { name: 'Orange', value: '#FED7AA' },
+  { name: 'Purple', value: '#E9D5FF' },
+  { name: 'Red', value: '#FECACA' },
+  { name: 'Cyan', value: '#A5F3FC' },
+  { name: 'Lime', value: '#D9F99D' },
+  { name: 'Rose', value: '#FECDD3' },
+  { name: 'Amber', value: '#FDE68A' },
+  { name: 'Teal', value: '#99F6E4' },
 ];
 
 const FONT_CATEGORIES = [
@@ -285,6 +294,7 @@ export const RichTextEditor = ({
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const attachmentInputRef = useRef<HTMLInputElement>(null);
   const savedRangeRef = useRef<Range | null>(null);
   const [history, setHistory] = useState<string[]>([content]);
   const [historyIndex, setHistoryIndex] = useState(0);
@@ -568,6 +578,118 @@ export const RichTextEditor = ({
     }
   };
 
+  // Handle file attachment upload (any file type)
+  const handleFileAttachment = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const fileDataUrl = reader.result as string;
+
+        if (editorRef.current) {
+          editorRef.current.focus();
+
+          // Create file attachment element
+          const wrapper = document.createElement('div');
+          wrapper.className = 'file-attachment-wrapper';
+          wrapper.contentEditable = 'false';
+          wrapper.style.display = 'inline-flex';
+          wrapper.style.alignItems = 'center';
+          wrapper.style.gap = '8px';
+          wrapper.style.padding = '8px 12px';
+          wrapper.style.margin = '8px 0';
+          wrapper.style.backgroundColor = 'hsl(var(--muted))';
+          wrapper.style.borderRadius = '8px';
+          wrapper.style.border = '1px solid hsl(var(--border))';
+          wrapper.style.maxWidth = '100%';
+          wrapper.setAttribute('data-file-name', file.name);
+          wrapper.setAttribute('data-file-type', file.type);
+          wrapper.setAttribute('data-file-size', file.size.toString());
+
+          // File icon
+          const icon = document.createElement('div');
+          icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>`;
+          icon.style.flexShrink = '0';
+          icon.style.color = 'hsl(var(--primary))';
+
+          // File info
+          const info = document.createElement('div');
+          info.style.overflow = 'hidden';
+          
+          const fileName = document.createElement('div');
+          fileName.textContent = file.name;
+          fileName.style.fontWeight = '500';
+          fileName.style.fontSize = '14px';
+          fileName.style.textOverflow = 'ellipsis';
+          fileName.style.overflow = 'hidden';
+          fileName.style.whiteSpace = 'nowrap';
+          
+          const fileSize = document.createElement('div');
+          const sizeInKB = (file.size / 1024).toFixed(1);
+          const sizeInMB = (file.size / (1024 * 1024)).toFixed(1);
+          fileSize.textContent = file.size > 1024 * 1024 ? `${sizeInMB} MB` : `${sizeInKB} KB`;
+          fileSize.style.fontSize = '12px';
+          fileSize.style.color = 'hsl(var(--muted-foreground))';
+          
+          info.appendChild(fileName);
+          info.appendChild(fileSize);
+
+          // Download link (hidden but stores the data)
+          const downloadLink = document.createElement('a');
+          downloadLink.href = fileDataUrl;
+          downloadLink.download = file.name;
+          downloadLink.style.display = 'none';
+          downloadLink.className = 'file-download-link';
+
+          // Click handler to download
+          wrapper.style.cursor = 'pointer';
+          wrapper.onclick = (ev) => {
+            ev.preventDefault();
+            downloadLink.click();
+          };
+
+          wrapper.appendChild(icon);
+          wrapper.appendChild(info);
+          wrapper.appendChild(downloadLink);
+
+          const selection = window.getSelection();
+          if (selection && selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            range.deleteContents();
+            
+            // Add line break before
+            const br1 = document.createElement('br');
+            range.insertNode(br1);
+            range.setStartAfter(br1);
+            
+            range.insertNode(wrapper);
+
+            // Add line break after and move cursor
+            const br2 = document.createElement('br');
+            range.setStartAfter(wrapper);
+            range.insertNode(br2);
+            range.setStartAfter(br2);
+            range.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(range);
+          } else {
+            editorRef.current.appendChild(document.createElement('br'));
+            editorRef.current.appendChild(wrapper);
+            editorRef.current.appendChild(document.createElement('br'));
+          }
+
+          handleInput();
+          toast.success(`File "${file.name}" attached`);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+    // Reset input
+    if (attachmentInputRef.current) {
+      attachmentInputRef.current.value = '';
+    }
+  };
+
   // Click outside to deselect images
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -582,6 +704,14 @@ export const RichTextEditor = ({
     };
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+
+  // Auto-capitalize first letter of new sentences
+  const autoCapitalize = useCallback((text: string): string => {
+    // Capitalize after: start of text, period+space, newline, exclamation, question mark
+    return text.replace(/(^|[.!?]\s+|\n)([a-z])/g, (match, prefix, letter) => {
+      return prefix + letter.toUpperCase();
+    });
   }, []);
 
   const handleInput = () => {
@@ -604,6 +734,26 @@ export const RichTextEditor = ({
       console.error('Error handling input:', error);
     }
   };
+
+  // Handle keydown for auto-capitalization
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    // Auto-capitalize after sentence-ending punctuation followed by space
+    if (e.key === ' ' && editorRef.current) {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const textNode = range.startContainer;
+        if (textNode.nodeType === Node.TEXT_NODE) {
+          const text = textNode.textContent || '';
+          const cursorPos = range.startOffset;
+          // Check if previous char is sentence-ending punctuation
+          if (cursorPos > 0 && /[.!?]/.test(text[cursorPos - 1])) {
+            // The next character typed should be capitalized - handled by browser autocapitalize
+          }
+        }
+      }
+    }
+  }, []);
 
   // Handle composition events for Android/IME input
   const handleCompositionStart = () => {
@@ -836,7 +986,7 @@ export const RichTextEditor = ({
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-2">
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-4 gap-2">
             {HIGHLIGHT_COLORS.map((color) => (
               <button
                 key={color.value}
@@ -943,15 +1093,20 @@ export const RichTextEditor = ({
               </div>
             </PopoverContent>
           </Popover>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleImageUpload}
-            className="hidden"
-          />
         </>
       )}
+
+      {/* File Attachment Button */}
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={() => attachmentInputRef.current?.click()}
+        className="h-8 w-8 p-0"
+        title="Attach File"
+      >
+        <Paperclip className="h-4 w-4" />
+      </Button>
 
       {showTable && <TableEditor onInsertTable={handleInsertTable} />}
 
@@ -1290,9 +1445,26 @@ export const RichTextEditor = ({
           onChange={(e) => onTitleChange(e.target.value)}
           placeholder="Title"
           className="title-input"
+          autoCapitalize="sentences"
           style={{ fontFamily, color: isStickyNote ? '#000000' : undefined }}
         />
       )}
+
+      {/* Hidden file inputs */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        className="hidden"
+        accept="image/*"
+        onChange={handleImageUpload}
+      />
+      <input
+        type="file"
+        ref={attachmentInputRef}
+        className="hidden"
+        accept="*/*"
+        onChange={handleFileAttachment}
+      />
 
       <div
         ref={editorRef}
@@ -1300,6 +1472,10 @@ export const RichTextEditor = ({
         onInput={handleInput}
         onCompositionStart={handleCompositionStart}
         onCompositionEnd={handleCompositionEnd}
+        onKeyDown={handleKeyDown}
+        data-gramm="false"
+        data-gramm_editor="false"
+        data-enable-grammarly="false"
         className={cn(
           "rich-text-editor flex-1 min-h-0 p-4 border-0 focus:outline-none overflow-y-auto pb-32 rich-text-editor__scroll",
           // Don't add pt-2 for lined notes - let CSS padding-top handle it
@@ -1314,8 +1490,11 @@ export const RichTextEditor = ({
           letterSpacing,
           // Don't override lineHeight for lined notes - let CSS handle it
           lineHeight: className?.includes('lined-note') ? undefined : lineHeight,
-          fontStyle: isItalic ? 'italic' : 'normal'
+          fontStyle: isItalic ? 'italic' : 'normal',
+          textTransform: 'none',
         }}
+        // @ts-ignore - autocapitalize is valid HTML attribute
+        autoCapitalize="sentences"
         suppressContentEditableWarning
       />
 
