@@ -3,6 +3,8 @@ import { NativeBiometric, BiometryType } from 'capacitor-native-biometric';
 
 const HIDDEN_NOTES_PASSWORD_KEY = 'npd_hidden_notes_password';
 const HIDDEN_NOTES_USE_BIOMETRIC_KEY = 'npd_hidden_notes_use_biometric';
+const SECURITY_QUESTION_KEY = 'npd_security_question';
+const SECURITY_ANSWER_KEY = 'npd_security_answer';
 
 export interface BiometricStatus {
   isAvailable: boolean;
@@ -112,6 +114,48 @@ export const setHiddenNotesBiometric = (enabled: boolean): void => {
 export const clearHiddenNotesProtection = (): void => {
   localStorage.removeItem(HIDDEN_NOTES_PASSWORD_KEY);
   localStorage.removeItem(HIDDEN_NOTES_USE_BIOMETRIC_KEY);
+};
+
+// Security Question functions for password recovery
+// Simple hash function for security answer
+const hashAnswer = (answer: string): string => {
+  const normalized = answer.toLowerCase().trim();
+  let hash = 0;
+  for (let i = 0; i < normalized.length; i++) {
+    const char = normalized.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return hash.toString(36) + normalized.length.toString(36);
+};
+
+// Set security question and answer
+export const setSecurityQuestion = (question: string, answer: string): void => {
+  localStorage.setItem(SECURITY_QUESTION_KEY, question);
+  localStorage.setItem(SECURITY_ANSWER_KEY, hashAnswer(answer));
+};
+
+// Get security question
+export const getSecurityQuestion = (): string | null => {
+  return localStorage.getItem(SECURITY_QUESTION_KEY);
+};
+
+// Verify security answer
+export const verifySecurityAnswer = (answer: string): boolean => {
+  const storedHash = localStorage.getItem(SECURITY_ANSWER_KEY);
+  if (!storedHash) return false;
+  return hashAnswer(answer) === storedHash;
+};
+
+// Check if security question is set up
+export const hasSecurityQuestion = (): boolean => {
+  return !!localStorage.getItem(SECURITY_QUESTION_KEY) && !!localStorage.getItem(SECURITY_ANSWER_KEY);
+};
+
+// Clear security question
+export const clearSecurityQuestion = (): void => {
+  localStorage.removeItem(SECURITY_QUESTION_KEY);
+  localStorage.removeItem(SECURITY_ANSWER_KEY);
 };
 
 // Authenticate for hidden notes access

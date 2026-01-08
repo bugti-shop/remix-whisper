@@ -331,6 +331,10 @@ const Index = () => {
     setNotes(prev => prev.map(n => n.id === noteId ? { ...n, isHidden: true } : n));
   };
 
+  const handleBulkHideNotes = (noteIds: string[]) => {
+    setNotes(prev => prev.map(n => noteIds.includes(n.id) ? { ...n, isHidden: true } : n));
+  };
+
   const handleProtectNote = (noteId: string) => {
     // Protection is handled via NoteProtectionSheet - this just triggers the dialog
     // For now, we'll store a flag that the note needs protection UI

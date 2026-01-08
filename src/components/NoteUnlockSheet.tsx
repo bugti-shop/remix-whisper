@@ -55,10 +55,12 @@ export const NoteUnlockSheet = ({
     const success = await authenticateWithBiometric('Unlock protected note');
     
     if (success) {
+      await triggerHaptic('heavy');
       toast.success('Unlocked successfully');
       onUnlocked();
       onClose();
     } else {
+      await triggerHaptic('heavy');
       toast.error('Authentication failed');
     }
     
@@ -76,10 +78,12 @@ export const NoteUnlockSheet = ({
     const success = verifyNotePassword(noteId, password);
     
     if (success) {
+      await triggerHaptic('heavy');
       toast.success('Unlocked successfully');
       onUnlocked();
       onClose();
     } else {
+      await triggerHaptic('heavy');
       toast.error('Incorrect password');
     }
   };
