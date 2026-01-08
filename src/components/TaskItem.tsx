@@ -203,7 +203,7 @@ export const TaskItem = ({
   const handleTouchEnd = async () => {
     if (swipeX < -SWIPE_THRESHOLD) {
       // Swipe left - Delete
-      try { await Haptics.impact({ style: ImpactStyle.Medium }); } catch {}
+      try { await Haptics.impact({ style: ImpactStyle.Heavy }); } catch {}
       onDelete(item.id);
     } else if (swipeX > SWIPE_THRESHOLD) {
       // Swipe right - Toggle complete
@@ -275,7 +275,7 @@ export const TaskItem = ({
                             if (checked && !item.completed) {
                               try {
                                 await Haptics.impact({ style: ImpactStyle.Heavy });
-                                setTimeout(async () => { try { await Haptics.impact({ style: ImpactStyle.Medium }); } catch {} }, 100);
+                                setTimeout(async () => { try { await Haptics.impact({ style: ImpactStyle.Heavy }); } catch {} }, 100);
                               } catch {}
                             }
                           }}

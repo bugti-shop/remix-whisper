@@ -3,6 +3,8 @@ import { TodoItem, Note } from '@/types/note';
 import { RepeatSettings, RepeatFrequency } from '@/components/TaskDateTimePage';
 import { addMinutes, addHours, addDays, addWeeks, addMonths, addYears } from 'date-fns';
 
+const DEFAULT_NOTIFICATION_ICON = 'npd_notification_icon';
+
 export interface NotificationData {
   taskId?: string;
   noteId?: string;
@@ -193,6 +195,8 @@ export class NotificationManager {
             sound: undefined,
             attachments: undefined,
             actionTypeId: SNOOZE_ACTION_TYPE_ID,
+            smallIcon: DEFAULT_NOTIFICATION_ICON,
+            largeIcon: DEFAULT_NOTIFICATION_ICON,
             extra: {
               ...extra,
               originalTitle: notification.title,
@@ -370,8 +374,8 @@ export class NotificationManager {
               sound: undefined,
               attachments: undefined,
               actionTypeId: SNOOZE_ACTION_TYPE_ID,
-              smallIcon: 'npd_notification_icon',
-              largeIcon: 'npd_notification_icon',
+              smallIcon: DEFAULT_NOTIFICATION_ICON,
+              largeIcon: DEFAULT_NOTIFICATION_ICON,
               extra: {
                 taskId: task.id,
                 type: 'task',
@@ -393,8 +397,8 @@ export class NotificationManager {
             sound: undefined,
             attachments: undefined,
             actionTypeId: SNOOZE_ACTION_TYPE_ID,
-            smallIcon: 'npd_notification_icon',
-            largeIcon: 'npd_notification_icon',
+            smallIcon: DEFAULT_NOTIFICATION_ICON,
+            largeIcon: DEFAULT_NOTIFICATION_ICON,
             extra: {
               taskId: task.id,
               type: 'task',
@@ -462,6 +466,8 @@ export class NotificationManager {
             sound: undefined,
             attachments: undefined,
             actionTypeId: SNOOZE_ACTION_TYPE_ID,
+            smallIcon: DEFAULT_NOTIFICATION_ICON,
+            largeIcon: DEFAULT_NOTIFICATION_ICON,
             extra: {
               noteId: note.id,
               type: 'note',
@@ -636,6 +642,8 @@ export class NotificationManager {
             schedule: { at: new Date(Date.now() + 1000) }, // Show in 1 second
             sound: undefined,
             attachments: undefined,
+            smallIcon: DEFAULT_NOTIFICATION_ICON,
+            largeIcon: DEFAULT_NOTIFICATION_ICON,
             extra: {
               type: 'budget',
               category,
@@ -746,6 +754,8 @@ export class NotificationManager {
             schedule: { at: new Date(Date.now() + 1000) }, // Show in 1 second
             sound: undefined,
             attachments: undefined,
+            smallIcon: DEFAULT_NOTIFICATION_ICON,
+            largeIcon: DEFAULT_NOTIFICATION_ICON,
             extra: {
               type: 'bill',
               billId,

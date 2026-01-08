@@ -13,6 +13,7 @@ import { TodoLayout } from './TodoLayout';
 import { createCalendarEvent, updateCalendarEvent, deleteCalendarEvent, isGoogleCalendarEnabled } from '@/utils/googleCalendar';
 import { toast } from 'sonner';
 import { loadTodoItems, saveTodoItems } from '@/utils/todoItemsStorage';
+import { notificationManager } from '@/utils/notifications';
 
 const TodoCalendar = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
@@ -48,6 +49,15 @@ const TodoCalendar = () => {
 
   const handleAddTask = async (task: Omit<TodoItem, 'id' | 'completed'>) => {
     const newItem: TodoItem = { id: Date.now().toString(), completed: false, ...task };
+
+    // Schedule reminder immediately if user provided date/time (UI or NLP)
+    if (newItem.dueDate || newItem.reminderTime) {
+      try {
+        await notificationManager.scheduleTaskReminder(newItem);
+      } catch (error) {
+        console.error('Failed to schedule notification:', error);
+      }
+    }
     
     // Sync to Google Calendar if enabled
     if (await isGoogleCalendarEnabled() && newItem.dueDate) {

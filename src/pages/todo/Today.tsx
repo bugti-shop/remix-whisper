@@ -162,9 +162,13 @@ const Today = () => {
       dueDate: task.dueDate || new Date(), // Default to current date if no date specified
       ...task 
     };
-    if (newItem.reminderTime) {
+
+    // If user set ANY date/time (including via NLP), schedule immediately.
+    const shouldSchedule = !!task.dueDate || !!task.reminderTime;
+    if (shouldSchedule) {
       try { await notificationManager.scheduleTaskReminder(newItem); } catch (error) { console.error('Failed to schedule notification:', error); }
     }
+
     setItems([newItem, ...items]);
     setInputSectionId(null);
   };
@@ -283,7 +287,7 @@ const Today = () => {
   };
 
   const handleAddTaskToSection = async (sectionId: string) => {
-    try { await Haptics.impact({ style: ImpactStyle.Light }); } catch {}
+    try { await Haptics.impact({ style: ImpactStyle.Heavy }); } catch {}
     setInputSectionId(sectionId);
     setIsInputOpen(true);
   };
@@ -313,7 +317,7 @@ const Today = () => {
   };
 
   const deleteItem = async (itemId: string, showUndo: boolean = false) => {
-    try { await Haptics.impact({ style: ImpactStyle.Medium }); } catch {}
+    try { await Haptics.impact({ style: ImpactStyle.Heavy }); } catch {}
     const deletedItem = items.find(item => item.id === itemId);
     setItems(items.filter((item) => item.id !== itemId));
     
@@ -396,7 +400,7 @@ const Today = () => {
   }, [sections]);
 
   const duplicateTask = async (task: TodoItem) => {
-    try { await Haptics.impact({ style: ImpactStyle.Light }); } catch {}
+    try { await Haptics.impact({ style: ImpactStyle.Heavy }); } catch {}
     const duplicatedTask: TodoItem = { ...task, id: Date.now().toString(), completed: false, text: `${task.text} (Copy)` };
     setItems([duplicatedTask, ...items]);
   };

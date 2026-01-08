@@ -51,7 +51,7 @@ export function useLongPressDrag(options: UseLongPressDragOptions = {}) {
     longPressTimerRef.current = setTimeout(async () => {
       if (!hasMovedRef.current) {
         try {
-          await Haptics.impact({ style: ImpactStyle.Medium });
+          await Haptics.impact({ style: ImpactStyle.Heavy });
         } catch {}
         
         setDragState({
@@ -108,7 +108,7 @@ export function useLongPressDrag(options: UseLongPressDragOptions = {}) {
         setDragState(prev => ({ ...prev, dragOverId: id }));
         onDragOver?.(id);
         try {
-          Haptics.impact({ style: ImpactStyle.Light });
+          Haptics.impact({ style: ImpactStyle.Heavy });
         } catch {}
       }
     }
