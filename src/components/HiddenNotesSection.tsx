@@ -32,6 +32,9 @@ import {
   KeyRound,
   FileText,
   Unlock,
+  HelpCircle,
+  ShieldQuestion,
+  EyeOffIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { triggerHaptic } from '@/utils/haptics';
@@ -40,19 +43,23 @@ import {
   setHiddenNotesPassword,
   setHiddenNotesBiometric,
   clearHiddenNotesProtection,
-  authenticateForHiddenNotes,
   verifyHiddenNotesPassword,
   checkBiometricAvailability,
   BiometricStatus,
   authenticateWithBiometric,
+  hasSecurityQuestion,
 } from '@/utils/noteProtection';
 import { NoteCard } from './NoteCard';
+import { ForgotPasswordSheet } from './ForgotPasswordSheet';
+import { SecurityQuestionSetup } from './SecurityQuestionSetup';
+import { BulkHideSheet } from './BulkHideSheet';
 
 interface HiddenNotesSectionProps {
   notes: Note[];
   onEditNote: (note: Note) => void;
   onUnhideNote: (noteId: string) => void;
   onDeleteNote: (noteId: string) => void;
+  onBulkHide?: (noteIds: string[]) => void;
 }
 
 export const HiddenNotesSection = ({
@@ -60,12 +67,16 @@ export const HiddenNotesSection = ({
   onEditNote,
   onUnhideNote,
   onDeleteNote,
+  onBulkHide,
 }: HiddenNotesSectionProps) => {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [showSetupDialog, setShowSetupDialog] = useState(false);
   const [showUnlockDialog, setShowUnlockDialog] = useState(false);
   const [showChangePasswordDialog, setShowChangePasswordDialog] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showSecurityQuestionSetup, setShowSecurityQuestionSetup] = useState(false);
+  const [showBulkHide, setShowBulkHide] = useState(false);
   const [biometricStatus, setBiometricStatus] = useState<BiometricStatus>({ isAvailable: false, biometryType: 'none' });
   const [settings, setSettings] = useState({ hasPassword: false, useBiometric: false });
   
@@ -122,6 +133,11 @@ export const HiddenNotesSection = ({
     setIsUnlocked(true);
     toast.success('Hidden notes protection enabled');
     resetForm();
+    
+    // Prompt to set up security question
+    if (usePassword && !hasSecurityQuestion()) {
+      setTimeout(() => setShowSecurityQuestionSetup(true), 500);
+    }
   };
 
   const handleUnlock = async () => {
@@ -196,6 +212,19 @@ export const HiddenNotesSection = ({
     toast.success('Protection removed');
   };
 
+  const handleForgotPasswordSuccess = () => {
+    setShowUnlockDialog(false);
+    // After password reset, unlock and refresh settings
+    setSettings(getHiddenNotesSettings());
+    setIsUnlocked(true);
+  };
+
+  const handleBulkHideNotes = (noteIds: string[]) => {
+    if (onBulkHide) {
+      onBulkHide(noteIds);
+    }
+  };
+
   const resetForm = () => {
     setPassword('');
     setConfirmPassword('');
@@ -229,7 +258,7 @@ export const HiddenNotesSection = ({
             <div className="text-left">
               <span className="text-foreground text-sm font-medium block">Hidden Notes</span>
               <span className="text-muted-foreground text-xs">
-                {hiddenNotes.length} protected note{hiddenNotes.length !== 1 ? 's' : ''}
+                {hiddenNotes.length} protected note{hiddenNotes.length !== 1 ? 's' : ''} • Encrypted
               </span>
             </div>
           </div>
@@ -353,11 +382,30 @@ export const HiddenNotesSection = ({
                     <KeyRound className="h-4 w-4 mr-2" />
                     Unlock with Password
                   </Button>
+
+                  <Button
+                    variant="ghost"
+                    className="w-full text-muted-foreground"
+                    onClick={() => {
+                      setShowUnlockDialog(false);
+                      setShowForgotPassword(true);
+                    }}
+                  >
+                    <HelpCircle className="h-4 w-4 mr-2" />
+                    Forgot Password?
+                  </Button>
                 </>
               )}
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Forgot Password Sheet */}
+        <ForgotPasswordSheet
+          isOpen={showForgotPassword}
+          onClose={() => setShowForgotPassword(false)}
+          onPasswordReset={handleForgotPasswordSuccess}
+        />
       </div>
     );
   }
@@ -372,6 +420,16 @@ export const HiddenNotesSection = ({
           <span className="text-xs text-muted-foreground">({hiddenNotes.length})</span>
         </div>
         <div className="flex items-center gap-2">
+          {onBulkHide && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowBulkHide(true)}
+            >
+              <EyeOffIcon className="h-4 w-4 mr-1" />
+              Bulk Hide
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -396,6 +454,17 @@ export const HiddenNotesSection = ({
           <Lock className="h-12 w-12 mx-auto mb-4 opacity-30" />
           <p>No hidden notes yet</p>
           <p className="text-xs mt-1">Long-press a note and select "Hide" to add it here</p>
+          {onBulkHide && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-4"
+              onClick={() => setShowBulkHide(true)}
+            >
+              <EyeOffIcon className="h-4 w-4 mr-2" />
+              Bulk Hide Notes
+            </Button>
+          )}
         </div>
       ) : (
         <ScrollArea className="h-[400px]">
@@ -472,6 +541,19 @@ export const HiddenNotesSection = ({
               <Button onClick={handleChangePassword} className="w-full">
                 Update Settings
               </Button>
+              
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowChangePasswordDialog(false);
+                  setShowSecurityQuestionSetup(true);
+                }}
+                className="w-full"
+              >
+                <ShieldQuestion className="h-4 w-4 mr-2" />
+                {hasSecurityQuestion() ? 'Update' : 'Set Up'} Security Question
+              </Button>
+              
               <Button
                 variant="outline"
                 onClick={() => setShowResetConfirm(true)}
@@ -484,6 +566,25 @@ export const HiddenNotesSection = ({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Security Question Setup Sheet */}
+      <SecurityQuestionSetup
+        isOpen={showSecurityQuestionSetup}
+        onClose={() => setShowSecurityQuestionSetup(false)}
+        onSetupComplete={() => {
+          toast.success('Security question saved');
+        }}
+      />
+
+      {/* Bulk Hide Sheet */}
+      {onBulkHide && (
+        <BulkHideSheet
+          isOpen={showBulkHide}
+          onClose={() => setShowBulkHide(false)}
+          notes={notes}
+          onBulkHide={handleBulkHideNotes}
+        />
+      )}
 
       {/* Reset Confirmation */}
       <AlertDialog open={showResetConfirm} onOpenChange={setShowResetConfirm}>

@@ -319,6 +319,14 @@ const Settings = () => {
                 localStorage.setItem('notes', JSON.stringify(updatedNotes));
                 toast({ title: 'Note moved to trash' });
               }}
+              onBulkHide={(noteIds) => {
+                const updatedNotes = notes.map((n) =>
+                  noteIds.includes(n.id) ? { ...n, isHidden: true } : n
+                );
+                setNotes(updatedNotes);
+                localStorage.setItem('notes', JSON.stringify(updatedNotes));
+                toast({ title: `${noteIds.length} note${noteIds.length > 1 ? 's' : ''} hidden` });
+              }}
             />
           </div>
 
